@@ -1,0 +1,103 @@
+import { centralDbBootstrap } from "@configs/database";
+import { CaslAbilityFactory } from "@modules/authorization/factories";
+import { Test, TestingModule } from "@nestjs/testing";
+import { PostgresDatabaseProviderModule } from "@providers/database/postgres/provider.module";
+import { ClsModule } from "nestjs-cls";
+import { initializeTransactionalContext } from "typeorm-transactional";
+import { CalendarController } from "../controllers/calendar.controller";
+import { CreateCalendarDto, UpdateCalendarDto } from "../dto";
+import { CalendarRepositoryFactory } from "../repositories/calendar.repoFactory";
+import { CalendarRepository } from "../repositories/calendar.repository";
+import { CalendarService } from "../services/calendar.service";
+
+describe.only("Calendar Service", () => {
+
+    // const schemaName = uuidv4();
+
+    beforeAll(async () => {
+        await centralDbBootstrap();
+        initializeTransactionalContext();
+    });
+
+    let module: TestingModule;
+    let service: CalendarService;
+    let calendarId: string;
+
+    beforeEach(async () => {
+        // await centralDbBootstrap();
+        module = await Test.createTestingModule({
+            imports: [
+                PostgresDatabaseProviderModule,
+                ClsModule.forRoot({
+                    global: true,
+                    middleware: { mount: true },
+                })
+            ],
+            controllers: [CalendarController],
+            providers: [
+                CalendarService,
+                CalendarRepositoryFactory,
+                CalendarRepository,
+                CaslAbilityFactory, 
+            ],
+        }).compile();
+
+        service = module.get<CalendarService>(CalendarService);
+
+        // repo = module.get<Repository<Calendar>>(getRepositoryToken(Calendar));
+    });
+
+    it("service should be defined", () => {
+        expect(service).toBeDefined();
+    });
+
+    it('should create a new calendar', async () => {
+        const dto: CreateCalendarDto = {
+            title: 'test',
+            description: "this tis testing description",
+            assigned_by: "shihab",
+            type:"test",
+            date: new Date("2023-01-03"),
+            status: "Active",
+            created_by: "shihab",
+        };
+
+        const calendar = await service.createOne(dto);
+        calendarId = calendar.data.id;
+        // console.log("calendar printing", calendar);
+        expect(calendar).toBeInstanceOf(Object);
+    });
+
+    it("find all", async () => {
+        const calendars = await service.findAllTest({});
+        console.log("calendars printing", calendars);
+        expect(calendars).toBeInstanceOf(Object);
+    });
+
+    it('find calendar by id', async () => {
+        const calendar = await service.findOneById(calendarId);
+        console.log("calendar printing", calendar);
+        expect(calendar).toBeInstanceOf(Object);
+    });
+
+    it('update calendar by id', async () => {
+        const dto: UpdateCalendarDto = {
+            title: 'test...',
+            description: "this tis testing description",
+            assigned_by: "shihab",
+            type:"test",
+            date: new Date("2023-01-03"),
+            status: "Active",
+            created_by: "shihab",
+        };
+
+        const calendar = await service.patchOne(calendarId, dto);
+        // console.log("calendar printing", calendar);
+        expect(calendar).toBeInstanceOf(Object);
+    });
+
+    afterAll(() => {
+        module.close();
+    });
+    
+});
