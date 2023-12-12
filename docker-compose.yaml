@@ -1,0 +1,38 @@
+version: '3.7'
+services:
+  platform-hr-sevice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: platform-hr-sevice
+    container_name: platform-hr-sevice
+    restart: always
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /app
+    # volumes:
+    #  - ./node_modules:/var/www/backend/node_modules
+    #  - type: bind
+    #    source: ./yarn.lock
+    #    target: /var/www/backend/yarn.lock
+    networks:
+        - app-network
+    healthcheck:
+       test: curl -sS http://localhost:5001 || exit 1
+       interval: 5s
+       timeout: 10s
+       retries: 3
+       start_period: 30s
+
+#Docker Networks
+# docker network create app-network
+networks:
+  app-network:
+    driver: bridge
+    external: true
+#Volumes
+volumes:
+  dbdata:
+    driver: local
