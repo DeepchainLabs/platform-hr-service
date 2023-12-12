@@ -1,6 +1,6 @@
 # Stage 1: Build the NestJS application
-FROM node:16.16.0 as builder
-#FROM node:16.16.0
+FROM node:20 as builder
+#FROM node:20
 
 WORKDIR /app
 
@@ -26,7 +26,7 @@ COPY . .
 RUN yarn run build
 
 # Stage 2: Create a light Docker image
-FROM node:16.16.0
+FROM node:20
 
 WORKDIR /app
 
