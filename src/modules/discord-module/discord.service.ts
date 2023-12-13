@@ -4,7 +4,6 @@ import { ClientRMQ } from "@nestjs/microservices";
 import { Channel, GuildMember, TextChannel, EmbedBuilder } from "discord.js";
 import * as moment from "moment";
 import { Observable, firstValueFrom } from "rxjs";
-import { ChannelsEnum } from "src/common/constants/channels";
 
 @Injectable()
 export class DiscordService {
