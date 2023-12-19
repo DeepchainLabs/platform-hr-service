@@ -59,6 +59,11 @@ export class CreateLeaveDto {
 
   @ApiProperty()
   @IsString()
+  @IsNotEmpty()
+  category_id: string;
+
+  @ApiProperty()
+  @IsString()
   @IsOptional()
   status?: string;
 }

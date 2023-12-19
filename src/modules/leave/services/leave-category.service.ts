@@ -3,12 +3,14 @@ import { CreateLeaveTypeDto, UpdateLeaveTypeDto } from "../dto";
 import { IReturnType } from "src/common/interfaces/return-type.interface";
 import { CustomException } from "src/common/exceptions/custom.exception";
 import { HttpExceptionWithLog } from "src/common/exceptions/HttpExceptionWithLog.exceptions";
-import { LeaveTypeRepository } from "../repositories/leave-type.repository";
-import { ILeaveType } from "../interfaces/leave-type.interface";
+import { LeaveCategoryRepository } from "../repositories/leave-category.repository";
+import { ILeaveCategory } from "../interfaces/leave-category.interface";
+import { CreateLeaveCategoryDto } from "../dto/create-leave-category.dto";
+import { UpdateLeaveCategoryDto } from "../dto/update-leave-category.dto";
 
 @Injectable()
-export class LeaveTypeService {
-  constructor(private leaveTypeRepository: LeaveTypeRepository) {}
+export class LeaveCategoryService {
+  constructor(private leaveTypeRepository: LeaveCategoryRepository) {}
 
   async findAll(findOptions?: any, tenantId?: string): Promise<IReturnType> {
     try {
@@ -20,7 +22,7 @@ export class LeaveTypeService {
         data: data,
       };
     } catch (err) {
-      throw new CustomException(LeaveTypeService.name, "findAll", err);
+      throw new CustomException(LeaveCategoryService.name, "findAll", err);
     }
   }
 
@@ -28,14 +30,14 @@ export class LeaveTypeService {
     findOptions: any,
     page: number,
     limit: number,
-  ): Promise<[ILeaveType[], number]> {
-    let data: [ILeaveType[], number];
+  ): Promise<[ILeaveCategory[], number]> {
+    let data: [ILeaveCategory[], number];
     try {
       data = await this.leaveTypeRepository.findAndCount(findOptions);
       return data;
     } catch (err) {
       throw new CustomException(
-        LeaveTypeService.name,
+        LeaveCategoryService.name,
         "findAllWithPagination",
         err,
       );
@@ -45,8 +47,8 @@ export class LeaveTypeService {
     findOptions: any,
     page: number,
     limit: number,
-  ): Promise<[ILeaveType[], number]> {
-    let data: [ILeaveType[], number];
+  ): Promise<[ILeaveCategory[], number]> {
+    let data: [ILeaveCategory[], number];
     try {
       data = await this.leaveTypeRepository.findAllActiveAndInactive(
         findOptions,
@@ -54,7 +56,7 @@ export class LeaveTypeService {
       return data;
     } catch (err) {
       throw new CustomException(
-        LeaveTypeService.name,
+        LeaveCategoryService.name,
         "findAllWithPagination",
         err,
       );
@@ -76,7 +78,7 @@ export class LeaveTypeService {
         data: data,
       };
     } catch (err) {
-      throw new CustomException(LeaveTypeService.name, "findOne", err);
+      throw new CustomException(LeaveCategoryService.name, "findOne", err);
     }
   }
 
@@ -90,11 +92,11 @@ export class LeaveTypeService {
         data: data,
       };
     } catch (err) {
-      throw new CustomException(LeaveTypeService.name, "findOneById", err);
+      throw new CustomException(LeaveCategoryService.name, "findOneById", err);
     }
   }
 
-  async createOne(dto: CreateLeaveTypeDto): Promise<IReturnType> {
+  async createOne(dto: CreateLeaveCategoryDto): Promise<IReturnType> {
     try {
       const data = await this.leaveTypeRepository.create(dto);
 
@@ -104,18 +106,21 @@ export class LeaveTypeService {
         data: data,
       };
     } catch (err) {
-      throw new CustomException(LeaveTypeService.name, "createOne", err);
+      throw new CustomException(LeaveCategoryService.name, "createOne", err);
     }
   }
 
-  async patchOne(id: string, dto: UpdateLeaveTypeDto): Promise<IReturnType> {
+  async patchOne(
+    id: string,
+    dto: UpdateLeaveCategoryDto,
+  ): Promise<IReturnType> {
     try {
       const leaveType = await this.leaveTypeRepository.findOneById(id);
       if (!leaveType)
         throw new HttpExceptionWithLog(
           "Leave type not found",
           HttpStatus.NOT_FOUND,
-          LeaveTypeService.name,
+          LeaveCategoryService.name,
           "patchOne",
         );
 
@@ -127,7 +132,7 @@ export class LeaveTypeService {
         data: data,
       };
     } catch (err) {
-      throw new CustomException(LeaveTypeService.name, "patchOne", err);
+      throw new CustomException(LeaveCategoryService.name, "patchOne", err);
     }
   }
 
@@ -141,7 +146,7 @@ export class LeaveTypeService {
         data: data,
       };
     } catch (err) {
-      throw new CustomException(LeaveTypeService.name, "deleteOne", err);
+      throw new CustomException(LeaveCategoryService.name, "deleteOne", err);
     }
   }
 }

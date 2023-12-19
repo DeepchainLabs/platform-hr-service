@@ -22,6 +22,9 @@ export class LeaveApplication {
   id?: string;
 
   @Column()
+  category_id?: string;
+
+  @Column()
   applied_for?: string;
 
   @Column()
@@ -120,9 +123,9 @@ export class LeaveApplication {
   // @JoinColumn({ name: 'applied_by', referencedColumnName: 'id' })
   // approvedUser?: User;
 
-  @ManyToOne(() => LeaveType)
-  @JoinColumn({ name: "leave_type_id", referencedColumnName: "id" })
-  type?: LeaveType;
+  // @ManyToOne(() => LeaveType)
+  // @JoinColumn({ name: "leave_type_id", referencedColumnName: "id" })
+  // type?: LeaveType;
 
   @OneToMany(() => LeaveAttachment, (map) => map.application)
   @JoinColumn({ name: "id", referencedColumnName: "application_id" })

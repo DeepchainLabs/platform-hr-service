@@ -196,10 +196,7 @@ export class LeaveInfoService {
   //     }
   // }
 
-  async createOne(
-    dto: CreateLeaveInfoDto,
-    tenantId?: string,
-  ): Promise<IReturnType> {
+  async createOne(dto: CreateLeaveInfoDto): Promise<IReturnType> {
     try {
       const users = await firstValueFrom(this.findManyUsers());
       const user = users[dto.user_id];
@@ -242,7 +239,7 @@ export class LeaveInfoService {
         end_date: new Date(endDate),
       };
 
-      const data = await this.leaveInfoRepository.create(info, tenantId);
+      const data = await this.leaveInfoRepository.create(info);
       return {
         success: true,
         message: "",

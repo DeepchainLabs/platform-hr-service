@@ -24,6 +24,7 @@ import { ClientRMQ } from "@nestjs/microservices";
 import { Observable, firstValueFrom } from "rxjs";
 import { LeaveStatus } from "src/common/enums/leave-status.enum";
 import { getAxios } from "src/config/axios_config";
+import { LeaveCategoryService } from "./leave-category.service";
 
 @Injectable()
 export class LeaveApplicationService {
@@ -33,6 +34,7 @@ export class LeaveApplicationService {
     private readonly leaveInfoService: LeaveInfoService,
     // private readonly emailService: EmailService,
     private readonly configService: ConfigService,
+    private readonly leaveCategoryService: LeaveCategoryService,
     // private readonly notificationDependency: NotificationDependency,
     @Inject("UserService") private readonly userServiceClient: ClientRMQ,
 
@@ -217,8 +219,13 @@ export class LeaveApplicationService {
       /**
        * get all types of leave
        */
-      const types = (
-        await this.leaveTypeService.findAll({
+      // const types = (
+      //   await this.leaveTypeService.findAll({
+      //     where: { is_active: true },
+      //   })
+      // ).data;
+      const categories = (
+        await this.leaveCategoryService.findAll({
           where: { is_active: true },
         })
       ).data;
@@ -240,10 +247,10 @@ export class LeaveApplicationService {
        * calculate num of leaves took by user in each type
        */
       applications.map((application) => {
-        daysUsed[application.leave_type_id as string] =
-          daysUsed[application.leave_type_id as string] || 0;
+        daysUsed[application.category_id as string] =
+          daysUsed[application.category_id as string] || 0;
 
-        daysUsed[application.leave_type_id as string] +=
+        daysUsed[application.category_id as string] +=
           application.num_of_working_days || 0;
       });
 
@@ -251,10 +258,10 @@ export class LeaveApplicationService {
        * prepare data for return with calculating remaining days
        */
       const data =
-        types &&
-        types.map((type: any) => ({
-          typeId: type.id,
-          typeName: type.title,
+        categories &&
+        categories.map((type: any) => ({
+          category_id: type.id,
+          categoryName: type.title,
           allowedDays: type.num_of_days_allowed,
           usedDays: daysUsed[type.id] || 0,
           remaining: type.num_of_days_allowed - (daysUsed[type.id] || 0),
@@ -283,7 +290,7 @@ export class LeaveApplicationService {
    */
   async getRemainingLeavesByTypeAndSession(
     userId: string,
-    typeId: string,
+    category_id: string,
     sessionId?: string,
   ): Promise<number> {
     try {
@@ -315,10 +322,13 @@ export class LeaveApplicationService {
       /**
        * get info for desired leave type
        */
-      const type = (await this.leaveTypeService.findOneById(typeId)).data;
-      if (!type)
+      // const type = (await this.leaveTypeService.findOneById(typeId)).data;
+      const category = (
+        await this.leaveCategoryService.findOneById(category_id)
+      ).data;
+      if (!category)
         throw new HttpExceptionWithLog(
-          "Type not found",
+          "category not found",
           HttpStatus.NOT_FOUND,
           LeaveApplicationService.name,
           "getRemainingLeavesByTypeAndSession",
@@ -331,7 +341,7 @@ export class LeaveApplicationService {
       const applications = await this.leaveApplicationRepository.find({
         where: {
           applied_for: userId,
-          leave_type_id: typeId,
+          category_id: category_id,
           session_id: session.id,
           status: LeaveStatus.APPROVED,
         },
@@ -345,7 +355,7 @@ export class LeaveApplicationService {
         daysUsed += application.num_of_working_days || 0;
       });
 
-      return type.num_of_days_allowed - daysUsed;
+      return category.num_of_days_allowed - daysUsed;
     } catch (err) {
       throw new CustomException(
         LeaveApplicationService.name,
@@ -368,28 +378,42 @@ export class LeaveApplicationService {
       /**
        * get current session info for user
        */
-      const session = (
+      let session = (
         await this.leaveInfoService.findOne({
           where: { user_id: dto.applied_for },
           order: { created_at: "DESC" },
         })
       ).data;
-      if (!session)
-        throw new HttpExceptionWithLog(
-          "This user has no leave information for current sesseion",
-          HttpStatus.NOT_FOUND,
-          LeaveApplicationService.name,
-          "createOne",
-        );
+      if (!session) {
+        await this.leaveInfoService.createOne({
+          user_id: dto.applied_for as string,
+          start_date: appliedFor.registered_at,
+        });
+        session = (
+          await this.leaveInfoService.findOne({
+            where: { user_id: dto.applied_for },
+            order: { created_at: "DESC" },
+          })
+        ).data;
+      }
+
+      // throw new HttpExceptionWithLog(
+      //   "This user has no leave information for current sesseion",
+      //   HttpStatus.NOT_FOUND,
+      //   LeaveApplicationService.name,
+      //   "createOne",
+      // );
 
       /**
        * get total remaining leaves for user for current session and applied leave type
        */
-      const remainingLeaves = await this.getRemainingLeavesByTypeAndSession(
-        dto.applied_for as string,
-        dto.leave_type_id,
-        session.id,
-      );
+      const remainingLeaves =
+        session &&
+        (await this.getRemainingLeavesByTypeAndSession(
+          dto.applied_for as string,
+          dto.category_id,
+          session.id as string,
+        ));
       console.log({ remainingLeaves, days: dto.num_of_working_days });
       /**
        * check validity of provided start and end dates
@@ -402,13 +426,11 @@ export class LeaveApplicationService {
       /**
        * check if the requested leave duration exceeds current session duration
        */
-      const sessionEndDistance = moment(session.end_date).diff(
-        dto.end_date,
-        "days",
-      );
+      const sessionEndDistance =
+        session && moment(session.end_date).diff(dto.end_date, "days");
       if (
         (dto.num_of_working_days && dto.num_of_working_days < 1) ||
-        sessionEndDistance < 0
+        (sessionEndDistance && sessionEndDistance < 0)
       )
         throw new HttpExceptionWithLog(
           "Invalid date",
@@ -421,7 +443,11 @@ export class LeaveApplicationService {
        * check if user requests for more leaves of requested type
        * than his remaining leaves of that type
        */
-      if (dto.num_of_working_days && dto.num_of_working_days > remainingLeaves)
+      if (
+        dto.num_of_working_days &&
+        remainingLeaves &&
+        dto.num_of_working_days > remainingLeaves
+      )
         throw new HttpExceptionWithLog(
           `You can apply for maximum ${remainingLeaves} days`,
           HttpStatus.BAD_REQUEST,
@@ -432,12 +458,14 @@ export class LeaveApplicationService {
       /**
        * create a leave application for user
        */
-      const data = await this.leaveApplicationRepository.create({
-        ...dto,
-        status: LeaveStatus.PENDING,
-        session_id: session.id,
-        created_by: dto.applied_by,
-      });
+      const data =
+        session &&
+        (await this.leaveApplicationRepository.create({
+          ...dto,
+          status: LeaveStatus.PENDING,
+          session_id: session.id,
+          created_by: dto.applied_by,
+        }));
       const EMAILS = this.configService.get<string>("env.EMAILS");
       console.log({ data });
       const emails = this.convertToEmailArray(EMAILS as any);

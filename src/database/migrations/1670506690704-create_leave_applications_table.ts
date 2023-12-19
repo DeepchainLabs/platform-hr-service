@@ -77,6 +77,11 @@ export class createLeaveApplicationsTable1670506690704
             isNullable: true,
           },
           {
+            name: "category_id",
+            type: "varchar",
+            isNullable: false,
+          },
+          {
             name: "leave_type_id",
             type: "varchar",
             isNullable: false,

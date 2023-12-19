@@ -1,23 +1,10 @@
-import {
-  Body,
-  Controller,
-  DefaultValuePipe,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-  ValidationPipe,
-} from "@nestjs/common";
+import { Controller } from "@nestjs/common";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
 import { CreateLeaveTypeDto, UpdateLeaveTypeDto } from "../dto";
 import { LeaveTypeService } from "../services/leave-type.service";
-import { QueryParserPipe } from "src/common/pipes/queryParser.pipe";
 import { paginateResponse } from "src/common/helpers/paginate-response";
 import { IReturnType } from "src/common/interfaces/return-type.interface";
-import { EventPattern, MessagePattern } from "@nestjs/microservices";
+import { MessagePattern } from "@nestjs/microservices";
 
 @ApiTags("LeaveType")
 @Controller("")
@@ -84,7 +71,7 @@ export class LeaveTypeController {
   /**
    * TODO Done
    */
-  @EventPattern("CREATE_ONE_LEAVE_APPLICATION_TYPE")
+  @MessagePattern("CREATE_ONE_LEAVE_APPLICATION_TYPE")
   @ApiBody({ type: CreateLeaveTypeDto })
   createOne({ body }: { body: CreateLeaveTypeDto }) {
     return this.leaveTypeService.createOne(body);
@@ -93,7 +80,7 @@ export class LeaveTypeController {
   /**
    * TODO Done
    */
-  @EventPattern("UPDATE_ONE_LEAVE_APPLICATION_TYPE")
+  @MessagePattern("UPDATE_ONE_LEAVE_APPLICATION_TYPE")
   @ApiBody({ type: UpdateLeaveTypeDto })
   patchOne({
     id,
@@ -108,7 +95,7 @@ export class LeaveTypeController {
   /**
    * TODO Done
    */
-  @EventPattern("DELETE_ONE_LEAVE_APPLICATION_TYPE")
+  @MessagePattern("DELETE_ONE_LEAVE_APPLICATION_TYPE")
   delete({ id }: { id: string }) {
     return this.leaveTypeService.deleteOne(id);
   }

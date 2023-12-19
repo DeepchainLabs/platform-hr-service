@@ -7,18 +7,13 @@ import {
   UpdateDateColumn,
   OneToMany,
   JoinColumn,
-  ManyToOne,
 } from "typeorm";
-import { LeaveApplication } from "./leave-application.entity";
-import { LeaveCategory } from "./leave-category.entity";
+import { LeaveType } from "./leave-type.entity";
 
-@Entity("leave_types")
-export class LeaveType {
+@Entity("leave_categories")
+export class LeaveCategory {
   @PrimaryGeneratedColumn("uuid")
   id?: string;
-
-  @Column()
-  category_id?: string;
 
   @Column()
   title?: string;
@@ -27,6 +22,9 @@ export class LeaveType {
     nullable: true,
   })
   description?: string;
+
+  @Column()
+  num_of_days_allowed?: number;
 
   @Column()
   status?: string;
@@ -60,7 +58,7 @@ export class LeaveType {
   deleted_at?: Date;
 
   // relations
-  @ManyToOne(() => LeaveCategory)
-  @JoinColumn({ name: "category_id", referencedColumnName: "id" })
-  category?: LeaveCategory;
+  @OneToMany(() => LeaveType, (type) => type.category)
+  @JoinColumn({ name: "id", referencedColumnName: "category_id" })
+  types?: LeaveType[];
 }

@@ -7,7 +7,7 @@ import {
   Min,
 } from "class-validator";
 
-export class CreateLeaveTypeDto {
+export class CreateLeaveCategoryDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
@@ -19,6 +19,8 @@ export class CreateLeaveTypeDto {
   description?: string;
 
   @ApiProperty()
+  @IsNumber()
+  @Min(1)
   @IsNotEmpty()
-  category_id: string;
+  num_of_days_allowed: number;
 }

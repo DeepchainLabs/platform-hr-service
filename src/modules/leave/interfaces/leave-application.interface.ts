@@ -14,6 +14,7 @@ export interface ILeaveApplication {
   num_of_working_days?: number;
   remarks?: string;
   leave_type_id?: string;
+  category_id?: string;
   status?: string;
   is_active?: boolean;
   created_by?: string;

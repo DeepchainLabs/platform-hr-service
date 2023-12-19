@@ -36,15 +36,6 @@ export class LeaveApplicationController {
     return paginateResponse(data, page, limit);
   }
 
-  // @Get("total-leave-count/:userId")
-  // trackLeaveWithoutPermission(
-  //   @Param("userId") userId: string,
-  //   @Query("period") period: string,
-  // ) {
-  //   if (!period) throw new BadRequestException();
-  //   // return this.leaveService.trackLeaveWithoutPermission(userId, period);
-  // }
-
   /**
    * TODO Done
    */
@@ -81,6 +72,7 @@ export class LeaveApplicationController {
   createOne({ body, user_id }: { body: CreateLeaveDto; user_id: string }) {
     body.applied_for = body.applied_for || user_id;
     body.applied_by = user_id;
+    console.log({ body });
     return this.leaveService.createOne(body);
   }
 

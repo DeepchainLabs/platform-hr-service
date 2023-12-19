@@ -2,7 +2,6 @@ import { forwardRef, Module } from "@nestjs/common";
 import { LeaveApplicationController } from "./controllers/leave-application.controller";
 import { LeaveApplicationRepository } from "./repositories/leave-application.repository";
 import { LeaveApplicationService } from "./services/leave-application.service";
-import { LeaveTypeRepository } from "./repositories/leave-type.repository";
 import { LeaveTypeService } from "./services/leave-type.service";
 import { LeaveAttachmentService } from "./services/leave-attachment.service";
 import { LeaveAttachmentRepository } from "./repositories/leave-attachment.repository";
@@ -21,6 +20,11 @@ import { LeaveType } from "./entities/leave-type.entity";
 import { LeaveAttachment } from "./entities/leave-attachment.entity";
 import { LeaveInfo } from "./entities/session-info.entity";
 import { WorkingDays } from "./entities/working-days.entity";
+import { LeaveTypeRepository } from "./repositories/leave-type.repository";
+import { LeaveCategoryService } from "./services/leave-category.service";
+import { LeaveCategoryRepository } from "./repositories/leave-category.repository";
+import { LeaveCategoryController } from "./controllers/leave-category.controller";
+import { LeaveCategory } from "./entities/leave-category.entity";
 
 @Module({
   imports: [
@@ -30,6 +34,7 @@ import { WorkingDays } from "./entities/working-days.entity";
       LeaveAttachment,
       LeaveInfo,
       WorkingDays,
+      LeaveCategory,
     ]),
     forwardRef(() => CalendarModule),
   ],
@@ -38,6 +43,7 @@ import { WorkingDays } from "./entities/working-days.entity";
     LeaveTypeController,
     LeaveInfoController,
     WorkingDaysController,
+    LeaveCategoryController,
   ],
   providers: [
     LeaveApplicationRepository,
@@ -51,6 +57,9 @@ import { WorkingDays } from "./entities/working-days.entity";
     CalendarDependency,
     WorkingDaysRepository,
     WorkingDaysService,
+
+    LeaveCategoryService,
+    LeaveCategoryRepository,
   ],
   exports: [
     LeaveApplicationService,

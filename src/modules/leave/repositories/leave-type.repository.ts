@@ -1,10 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import { LeaveType } from "../entities/leave-type.entity";
-import { ILeaveType } from "../interfaces/leave-type.interface";
 import { LeaveTypeMapperInstance } from "../mappers/leave-type.mapper";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { CustomException } from "src/common/exceptions/custom.exception";
+import { ILeaveType } from "../interfaces/leave-type.interface";
 
 @Injectable()
 export class LeaveTypeRepository {

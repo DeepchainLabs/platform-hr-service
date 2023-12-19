@@ -52,7 +52,7 @@ export class LeaveInfoRepository {
     }
   }
 
-  async create(data: ILeaveInfo, tenantId?: string): Promise<ILeaveInfo> {
+  async create(data: ILeaveInfo): Promise<ILeaveInfo> {
     try {
       const info = await this.leaveInfoRepository.save(data);
       return LeaveInfoMapperInstance.mapOne(info);

@@ -1,8 +1,8 @@
-export interface ILeaveType {
+export interface ILeaveCategory {
   id?: string;
-  category_id?: string;
   title?: string;
   description?: string;
+  num_of_days_allowed?: number;
   status?: string;
   is_active?: boolean;
   created_by?: string;

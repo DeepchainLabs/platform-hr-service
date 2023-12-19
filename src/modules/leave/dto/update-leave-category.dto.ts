@@ -1,7 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsOptional, IsString, IsNumber } from "class-validator";
 
-export class UpdateLeaveTypeDto {
+export class UpdateLeaveCategoryDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
@@ -15,7 +15,7 @@ export class UpdateLeaveTypeDto {
   @ApiProperty()
   @IsNumber()
   @IsOptional()
-  category_id?: string;
+  num_of_days_allowed?: number;
 
   // @IsString()
   // @IsOptional()
