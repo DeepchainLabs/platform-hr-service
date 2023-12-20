@@ -26,7 +26,10 @@ export class LeaveApplicationRepository {
     findOptions?: any,
   ): Promise<[ILeaveApplication[], number]> {
     try {
-      const tasks = await this.leaveRepository.findAndCount(findOptions);
+      const tasks = await this.leaveRepository.findAndCount({
+        ...findOptions,
+        relations: { attachments: true },
+      });
       return [LeaveApplicationMapperInstance.mapMany(tasks[0]), tasks[1]];
     } catch (err) {
       throw new CustomException(
@@ -58,7 +61,10 @@ export class LeaveApplicationRepository {
     tenantId?: string,
   ): Promise<ILeaveApplication | null> {
     try {
-      const leave = await this.leaveRepository.findOne(findOptions);
+      const leave = await this.leaveRepository.findOne({
+        ...findOptions,
+        relations: { attachments: true },
+      });
       return leave && LeaveApplicationMapperInstance.mapOne(leave);
     } catch (err) {
       throw new CustomException(

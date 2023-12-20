@@ -32,10 +32,8 @@ export class LeaveApplicationService {
     private leaveApplicationRepository: LeaveApplicationRepository,
     private readonly leaveTypeService: LeaveTypeService,
     private readonly leaveInfoService: LeaveInfoService,
-    // private readonly emailService: EmailService,
     private readonly configService: ConfigService,
     private readonly leaveCategoryService: LeaveCategoryService,
-    // private readonly notificationDependency: NotificationDependency,
     @Inject("UserService") private readonly userServiceClient: ClientRMQ,
 
     private eventEmitter: EventEmitter2,
@@ -114,7 +112,17 @@ export class LeaveApplicationService {
           : { id: id };
       }
 
-      const data = await this.leaveApplicationRepository.findOne(findOptions);
+      const data: any = await this.leaveApplicationRepository.findOne(
+        findOptions,
+      );
+      const users = await firstValueFrom(this.findManyUsers());
+      const user = users[data?.applied_for];
+      const applicant_info = {
+        id: data?.applied_for,
+        name: user?.profile?.first_name + " " + user?.profile?.last_name,
+        image: user?.profile?.image,
+      };
+      data.applicant_info = applicant_info;
       return {
         success: true,
         message: "",
@@ -384,6 +392,11 @@ export class LeaveApplicationService {
    * @param {CreateLeaveTypeDto} dto
    * @returns {IReturnType} Promise
    */
+
+  sendMail(payload: any) {
+    this.eventEmitter.emit("SEND_MAIL", payload);
+  }
+
   async createOne(dto: CreateLeaveDto): Promise<IReturnType> {
     try {
       const users = await firstValueFrom(this.findManyUsers());
@@ -437,7 +450,7 @@ export class LeaveApplicationService {
       const sessionEndDistance =
         session && moment(session.end_date).diff(dto.end_date, "days");
       if (
-        (dto.num_of_working_days && dto.num_of_working_days < 1) ||
+        (dto.num_of_working_days && +dto.num_of_working_days < 1) ||
         (sessionEndDistance && sessionEndDistance < 0)
       )
         throw new HttpExceptionWithLog(
@@ -454,7 +467,7 @@ export class LeaveApplicationService {
       if (
         dto.num_of_working_days &&
         remainingLeaves &&
-        dto.num_of_working_days > remainingLeaves
+        +dto.num_of_working_days > remainingLeaves
       )
         throw new HttpExceptionWithLog(
           `You can apply for maximum ${remainingLeaves} days`,
@@ -649,8 +662,8 @@ export class LeaveApplicationService {
         });
       }
       //TODO NEED TO SEND MAIL FROM HERE
-      await this.sendEmail(emails_data);
-
+      // await this.sendEmail(emails_data);
+      this.sendMail(emails_data);
       const text = `
 **<@${appliedFor.discord_id}>** requested for ${
         dto.num_of_working_days && dto.num_of_working_days > 1
@@ -687,7 +700,7 @@ export class LeaveApplicationService {
         channelId: HR_CHANNEL,
         msg: [embed],
       });
-
+      console.log("here....", data);
       return {
         success: true,
         message: "",
@@ -840,6 +853,8 @@ export class LeaveApplicationService {
           dto.session_id as string,
         ));
       console.log("Debug Info:", {
+        category: dto.category_id,
+        session: dto.session_id,
         num_of_working_days: dto.num_of_working_days,
         remainingLeaves: remainingLeaves,
         condition: ((dto.num_of_working_days as number) >
@@ -877,7 +892,7 @@ export class LeaveApplicationService {
         appliedApplicationFor?.username?.slice(1);
 
       //Sending Mail Notification to Admins
-      for await (const obj of emails) {
+      for (const obj of emails) {
         emails_data.push({
           to: obj,
           subject: `Leave Application ${
@@ -908,7 +923,8 @@ export class LeaveApplicationService {
         });
       }
       //TODO NEED TO SEND MAIL FROM HERE
-      await this.sendEmail(emails_data);
+      this.sendMail(emails_data);
+      // await this.sendEmail(emails_data);
       //   await this.emailService.sendEmailJob(emails_data);
       //Sending Discord Notification to Admins
       const text = `
@@ -979,7 +995,7 @@ export class LeaveApplicationService {
       }
 
       //TODO NEED TO SEND DISCORD NOTIFICATION FROM HERE
-      //   await this.emailService.sendDiscordNotification([embed]);
+      // await this.emailService.sendDiscordNotification([embed]);
       const HR_CHANNEL = this.configService.get<string>("env.HR_CHANNEL");
       this.sendDiscordNotification({
         channelId: HR_CHANNEL,
@@ -998,8 +1014,8 @@ export class LeaveApplicationService {
               : dto.status === "Rejected"
               ? `❌`
               : `🛠️`
-          }</strong></h1> 
-                    </br> 
+          }</strong></h1>
+                    </br>
                     <h3>Requested Date : ${moment(dto.start_date).format(
                       "LL",
                     )} to ${moment(dto.end_date).format("LL")}
@@ -1031,6 +1047,7 @@ export class LeaveApplicationService {
         //   dto.status,
         // );
       }
+      console.log({ data });
       return {
         success: true,
         message: "",

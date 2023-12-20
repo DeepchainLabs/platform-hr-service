@@ -5,6 +5,7 @@ import { CustomException } from "src/common/exceptions/custom.exception";
 import { IReturnType } from "src/common/interfaces/return-type.interface";
 import { paginateResponse } from "src/common/helpers/paginate-response";
 import { HttpExceptionWithLog } from "src/common/exceptions/HttpExceptionWithLog.exceptions";
+import { CreateLeaveAttachmentDto } from "../dto";
 
 @Injectable()
 export class LeaveAttachmentService {
@@ -62,7 +63,7 @@ export class LeaveAttachmentService {
     }
   }
 
-  async createOne(dto: any): Promise<IReturnType> {
+  async createOne(dto: CreateLeaveAttachmentDto): Promise<IReturnType> {
     try {
       const data = await this.leaveAttachmentRepository.create(dto);
 

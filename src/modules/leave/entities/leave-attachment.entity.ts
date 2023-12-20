@@ -1,60 +1,69 @@
 import {
-    Column,
-    Entity,
-    PrimaryGeneratedColumn,
-    DeleteDateColumn,
-    CreateDateColumn,
-    UpdateDateColumn,
-    ManyToOne,
-    JoinColumn,
-} from 'typeorm';
-import { LeaveApplication } from './leave-application.entity';
+  Column,
+  Entity,
+  PrimaryGeneratedColumn,
+  DeleteDateColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from "typeorm";
+import { LeaveApplication } from "./leave-application.entity";
 
-@Entity('leave_application_attachments')
+@Entity("leave_application_attachments")
 export class LeaveAttachment {
-    @PrimaryGeneratedColumn('uuid')
-    id?: string;
+  @PrimaryGeneratedColumn("uuid")
+  id?: string;
 
-    @Column()
-    application_id?: string;
+  @Column()
+  application_id?: string;
 
-    @Column({
-        nullable: true,
-    })
-    display_name?: string;
+  @Column({
+    nullable: true,
+  })
+  display_name?: string;
 
-    @Column()
-    file_path?: string;
+  @Column()
+  file_path?: string;
 
-    @Column()
-    is_active?: boolean;
+  @Column()
+  size?: number;
 
-    @Column()
-    created_by?: string;
+  @Column()
+  type?: string;
 
-    @Column()
-    updated_by?: string;
+  @Column()
+  storage_type?: string;
 
-    @Column()
-    deleted_by?: string;
+  @Column()
+  is_active?: boolean;
 
-    @CreateDateColumn({
-        type: 'timestamp',
-        default: () => 'CURRENT_TIMESTAMP(6)',
-    })
-    created_at?: Date;
+  @Column()
+  created_by?: string;
 
-    @UpdateDateColumn({
-        type: 'timestamp',
-        default: () => 'CURRENT_TIMESTAMP(6)',
-        onUpdate: 'CURRENT_TIMESTAMP(6)',
-    })
-    updated_at?: Date;
+  @Column()
+  updated_by?: string;
 
-    @DeleteDateColumn()
-    deleted_at?: Date;
+  @Column()
+  deleted_by?: string;
 
-    @ManyToOne(() => LeaveApplication)
-    @JoinColumn({ name: 'application_id', referencedColumnName: 'id' })
-    application?: LeaveApplication;
+  @CreateDateColumn({
+    type: "timestamp",
+    default: () => "CURRENT_TIMESTAMP(6)",
+  })
+  created_at?: Date;
+
+  @UpdateDateColumn({
+    type: "timestamp",
+    default: () => "CURRENT_TIMESTAMP(6)",
+    onUpdate: "CURRENT_TIMESTAMP(6)",
+  })
+  updated_at?: Date;
+
+  @DeleteDateColumn()
+  deleted_at?: Date;
+
+  @ManyToOne(() => LeaveApplication)
+  @JoinColumn({ name: "application_id", referencedColumnName: "id" })
+  application?: LeaveApplication;
 }

@@ -110,16 +110,6 @@ export class LeaveAttachmentRepository {
   // TODO: what to return here
   async delete(id: string): Promise<any> {
     try {
-      // return await this.leaveAttachmentsRepository.softDelete({
-      //     id: id,
-      // });
-      const file = await this.leaveAttachmentsRepository.findOne({
-        where: { id: id },
-      });
-      console.log("fffff ", file);
-      if (file?.file_path) {
-        fs.unlinkSync(file.file_path);
-      }
       return await this.leaveAttachmentsRepository.delete(id);
     } catch (err) {
       throw new CustomException(LeaveAttachmentRepository.name, "delete", err);

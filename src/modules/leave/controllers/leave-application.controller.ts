@@ -61,6 +61,7 @@ export class LeaveApplicationController {
     findOptions: any;
     id: string;
   }): Promise<IReturnType> {
+    console.log({ id });
     return this.leaveService.findOne(findOptions, id);
   }
 
@@ -69,11 +70,19 @@ export class LeaveApplicationController {
    */
   @ApiBody({ type: CreateLeaveDto })
   @MessagePattern("CREATE_ONE_APPLICATION")
-  createOne({ body, user_id }: { body: CreateLeaveDto; user_id: string }) {
+  async createOne({
+    body,
+    user_id,
+  }: {
+    body: CreateLeaveDto;
+    user_id: string;
+  }) {
     body.applied_for = body.applied_for || user_id;
     body.applied_by = user_id;
     console.log({ body });
-    return this.leaveService.createOne(body);
+    const newApp = await this.leaveService.createOne(body);
+    console.log({ newApp });
+    return newApp;
   }
 
   /**
@@ -93,7 +102,9 @@ export class LeaveApplicationController {
     // body.applied_for = body.applied_for || user_id;
     body.updated_by = user_id;
     body.approved_by = user_id;
-    return await this.leaveService.patchOne(id, body);
+    const data = await this.leaveService.patchOne(id, body);
+    console.log({ ddddd: data });
+    return data;
   }
 
   /**

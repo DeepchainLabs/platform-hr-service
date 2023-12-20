@@ -25,6 +25,8 @@ import { LeaveCategoryService } from "./services/leave-category.service";
 import { LeaveCategoryRepository } from "./repositories/leave-category.repository";
 import { LeaveCategoryController } from "./controllers/leave-category.controller";
 import { LeaveCategory } from "./entities/leave-category.entity";
+import { LeaveAttachmentsController } from "./controllers/leave-attachment.controller";
+import { EventListenService } from "./services/event-emit.service";
 
 @Module({
   imports: [
@@ -44,8 +46,10 @@ import { LeaveCategory } from "./entities/leave-category.entity";
     LeaveInfoController,
     WorkingDaysController,
     LeaveCategoryController,
+    LeaveAttachmentsController,
   ],
   providers: [
+    EventListenService,
     LeaveApplicationRepository,
     LeaveApplicationService,
     LeaveTypeRepository,
