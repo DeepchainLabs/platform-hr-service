@@ -64,7 +64,21 @@ export class LeaveApplicationService {
   ): Promise<[ILeaveApplication[], number]> {
     let data: [ILeaveApplication[], number];
     try {
+      const users = await firstValueFrom(this.findManyUsers());
       data = await this.leaveApplicationRepository.findAndCount(findOptions);
+      const res: any = [];
+      data[0] &&
+        data[0].map((d: any) => {
+          const user = users[d.applied_for];
+          const applied_for = {
+            id: d.applied_for,
+            name: user?.profile?.first_name + " " + user?.profile?.last_name,
+            image: user?.profile?.image,
+          };
+          d.applied_for = applied_for;
+          res.push(d);
+        });
+      return [res, data[1]];
       return data;
     } catch (err) {
       throw new CustomException(
@@ -384,7 +398,21 @@ export class LeaveApplicationService {
           order: { created_at: "DESC" },
         })
       ).data;
+      if (session && moment(session?.end_date) < moment(new Date())) {
+        const newDate = moment(session?.end_date).add(1, "days").toDate();
+        await this.leaveInfoService.createOne({
+          user_id: dto.applied_for as string,
+          start_date: newDate,
+        });
+        session = (
+          await this.leaveInfoService.findOne({
+            where: { user_id: dto.applied_for },
+            order: { created_at: "DESC" },
+          })
+        ).data;
+      }
       if (!session) {
+        //if session not available, creating one for this user with joining date
         await this.leaveInfoService.createOne({
           user_id: dto.applied_for as string,
           start_date: appliedFor.registered_at,
@@ -397,16 +425,6 @@ export class LeaveApplicationService {
         ).data;
       }
 
-      // throw new HttpExceptionWithLog(
-      //   "This user has no leave information for current sesseion",
-      //   HttpStatus.NOT_FOUND,
-      //   LeaveApplicationService.name,
-      //   "createOne",
-      // );
-
-      /**
-       * get total remaining leaves for user for current session and applied leave type
-       */
       const remainingLeaves =
         session &&
         (await this.getRemainingLeavesByTypeAndSession(
@@ -415,17 +433,7 @@ export class LeaveApplicationService {
           session.id as string,
         ));
       console.log({ remainingLeaves, days: dto.num_of_working_days });
-      /**
-       * check validity of provided start and end dates
-       */
-      // dto.num_of_working_days = moment(dto.end_date).diff(
-      //     dto.start_date,
-      //     'days'
-      // );
 
-      /**
-       * check if the requested leave duration exceeds current session duration
-       */
       const sessionEndDistance =
         session && moment(session.end_date).diff(dto.end_date, "days");
       if (
@@ -822,12 +830,30 @@ export class LeaveApplicationService {
       const appliedApplicationFor = users[dto?.applied_for as string];
       const getUserByRawQuery = users[dto.applied_for as string];
       const getApprovedByUser = users[dto.approved_by as string];
-      console.log({
-        appliedFor: dto.applied_for,
-        appliedApplicationFor,
-        getUserByRawQuery,
-        getApprovedByUser,
+
+      const remainingLeaves: any =
+        dto.category_id &&
+        dto.session_id &&
+        (await this.getRemainingLeavesByTypeAndSession(
+          dto.applied_for as string,
+          dto.category_id,
+          dto.session_id as string,
+        ));
+      console.log("Debug Info:", {
+        num_of_working_days: dto.num_of_working_days,
+        remainingLeaves: remainingLeaves,
+        condition: ((dto.num_of_working_days as number) >
+          remainingLeaves) as any,
       });
+
+      if (((dto.num_of_working_days as number) > remainingLeaves) as any) {
+        throw new HttpExceptionWithLog(
+          `You can apply for a maximum of ${remainingLeaves} days`,
+          HttpStatus.BAD_REQUEST,
+          LeaveApplicationService.name,
+          "createOne",
+        );
+      }
       const leave = await this.leaveApplicationRepository.findOneById(id);
       if (!leave)
         throw new HttpExceptionWithLog(

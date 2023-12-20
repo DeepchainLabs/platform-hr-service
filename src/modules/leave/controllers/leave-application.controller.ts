@@ -81,7 +81,7 @@ export class LeaveApplicationController {
    */
   @MessagePattern("UPDATE_ONE_APPLICATION")
   @ApiBody({ type: UpdateLeaveDto })
-  patchOne({
+  async patchOne({
     id,
     body,
     user_id,
@@ -90,10 +90,10 @@ export class LeaveApplicationController {
     body: UpdateLeaveDto;
     user_id: string;
   }): Promise<IReturnType> {
-    body.applied_for = body.applied_for || user_id;
+    // body.applied_for = body.applied_for || user_id;
     body.updated_by = user_id;
     body.approved_by = user_id;
-    return this.leaveService.patchOne(id, body);
+    return await this.leaveService.patchOne(id, body);
   }
 
   /**

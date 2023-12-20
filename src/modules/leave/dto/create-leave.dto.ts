@@ -14,6 +14,12 @@ export class CreateLeaveDto {
     this.applied_by = "";
     this.num_of_working_days = 0;
   }
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  session_id?: string;
+
   @ApiProperty()
   @IsString()
   @IsOptional()
