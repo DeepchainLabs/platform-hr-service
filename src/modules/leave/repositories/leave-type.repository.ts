@@ -64,7 +64,10 @@ export class LeaveTypeRepository {
     tenantId?: string,
   ): Promise<ILeaveType | null> {
     try {
-      const leaveType = await this.leaveTypesRepository.findOne(findOptions);
+      const leaveType = await this.leaveTypesRepository.findOne({
+        ...findOptions,
+        relations: { category: true },
+      });
       return leaveType && LeaveTypeMapperInstance.mapOne(leaveType);
     } catch (err) {
       throw new CustomException(LeaveTypeRepository.name, "findOne", err);

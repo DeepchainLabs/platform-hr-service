@@ -29,6 +29,7 @@ export class LeaveApplicationRepository {
       const tasks = await this.leaveRepository.findAndCount({
         ...findOptions,
         relations: { attachments: true },
+        order: { status: "DESC" },
       });
       return [LeaveApplicationMapperInstance.mapMany(tasks[0]), tasks[1]];
     } catch (err) {
