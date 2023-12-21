@@ -27,9 +27,10 @@ export class LeaveTypeRepository {
       findOptions.where = findOptions.where
         ? { ...findOptions.where, is_active: true }
         : { is_active: true };
-      const leaveTypes = await this.leaveTypesRepository.findAndCount(
-        findOptions,
-      );
+      const leaveTypes = await this.leaveTypesRepository.findAndCount({
+        ...findOptions,
+        relations: { category: true },
+      });
       return [LeaveTypeMapperInstance.mapMany(leaveTypes[0]), leaveTypes[1]];
     } catch (err) {
       throw new CustomException(LeaveTypeRepository.name, "findAndCount", err);
