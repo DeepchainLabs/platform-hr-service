@@ -27,7 +27,7 @@ import { DiscordModule } from "./modules/discord-module/discord.module";
           transport: Transport.RMQ,
           options: {
             queue: "UserServiceQueue",
-            urls: ["amqp://localhost:5672"],
+            urls: [process.env.AMQP_URL ?? ""],
             queueOptions: { durable: true },
           },
         },
@@ -41,7 +41,7 @@ import { DiscordModule } from "./modules/discord-module/discord.module";
               transport: Transport.RMQ,
               options: {
                 queue: "AttendanceServiceQueue",
-                urls: ["amqp://localhost:5672"],
+                urls: [process.env.AMQP_URL ?? ""],
                 queueOptions: { durable: true },
               },
             },

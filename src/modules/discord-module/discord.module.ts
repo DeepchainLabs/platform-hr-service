@@ -12,7 +12,7 @@ import { DiscordService } from "./discord.service";
               transport: Transport.RMQ,
               options: {
                 queue: "AttendanceServiceQueue",
-                urls: ["amqp://localhost:5672"],
+                urls: [process.env.AMQP_URL ?? ""],
                 queueOptions: { durable: true },
               },
             },
