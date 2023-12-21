@@ -14,7 +14,7 @@ export class WorkingDaysRepository {
   async find(findOptions?: any, tenantId?: string) {
     try {
       const res = await this.workingDaysRepository.find(findOptions);
-      return res;
+      return res ? res[0] : {};
     } catch (err) {
       throw new CustomException(WorkingDaysRepository.name, "findOne", err);
     }
@@ -22,8 +22,8 @@ export class WorkingDaysRepository {
   async createOne(data: WorkingDays) {
     try {
       const res = await this.workingDaysRepository.create(data);
-      await this.workingDaysRepository.save(res);
-      return res;
+      const days = await this.workingDaysRepository.save(res);
+      return days;
     } catch (err) {
       throw new CustomException(WorkingDaysRepository.name, "findOne", err);
     }

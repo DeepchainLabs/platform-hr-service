@@ -73,8 +73,10 @@ export class LeaveTypeController {
    */
   @MessagePattern("CREATE_ONE_LEAVE_APPLICATION_TYPE")
   @ApiBody({ type: CreateLeaveTypeDto })
-  createOne({ body }: { body: CreateLeaveTypeDto }) {
-    return this.leaveTypeService.createOne(body);
+  async createOne({ body }: { body: CreateLeaveTypeDto }) {
+    const res = await this.leaveTypeService.createOne(body);
+    console.log({ res });
+    return res;
   }
 
   /**

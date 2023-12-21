@@ -31,39 +31,31 @@ export class WorkingDaysController {
    * TODO Done
    */
   @MessagePattern("GET_WORKING_DAYS")
-  async findAll({
-    findOptions,
-    page,
-    limit,
-  }: {
-    findOptions: any;
-    page: number;
-    limit: number;
-  }) {
+  async findAll({ findOptions }: { findOptions: any }) {
     return await this.workingDaysService.find(findOptions);
   }
 
   /**
    * TODO Done
    */
-  @EventPattern("CREATE_WORKING_DAY")
+  @MessagePattern("CREATE_WORKING_DAY")
   @ApiBody({ type: UpdateWorkingDaysDto })
-  createOne({ body }: { body: WorkingDays }) {
-    return this.workingDaysService.createOne(body);
+  async createOne({ body }: { body: WorkingDays }) {
+    return await this.workingDaysService.createOne(body);
   }
 
   /**
    * TODO Done
    */
-  @EventPattern("UPDATE_WORKING_DAY")
+  @MessagePattern("UPDATE_WORKING_DAY")
   @ApiBody({ type: UpdateWorkingDaysDto })
-  patchOne({
+  async patchOne({
     id,
     body,
   }: {
     id: string;
     body: WorkingDays;
   }): Promise<IReturnType> {
-    return this.workingDaysService.patchOne(id, body);
+    return await this.workingDaysService.patchOne(id, body);
   }
 }

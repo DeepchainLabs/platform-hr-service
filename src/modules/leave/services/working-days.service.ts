@@ -22,7 +22,7 @@ export class WorkingDaysService {
   }
   async createOne(dto: WorkingDays) {
     try {
-      await this.workingDaysRepository.createOne(dto);
+      return await this.workingDaysRepository.createOne(dto);
     } catch (err) {
       throw new CustomException(WorkingDaysService.name, "patchOne", err);
     }
