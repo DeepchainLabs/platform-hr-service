@@ -58,7 +58,18 @@ export class LeaveInfoService {
       const data = await this.leaveInfoRepository.find({
         where: { user_id: userId },
       });
-
+      const users = await firstValueFrom(this.findManyUsers());
+      const res: any = [];
+      data &&
+        data?.map((d: any) => {
+          const user = users[d.user_id];
+          const user_info = {
+            id: d.user_id,
+            name: user?.profile?.first_name + " " + user?.profile?.last_name,
+            image: user?.profile?.image,
+          };
+          d.user_info = user_info;
+        });
       return {
         success: true,
         message: "",
