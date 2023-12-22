@@ -15,7 +15,10 @@ export class LeaveInfoRepository {
 
   async find(findOptions?: any): Promise<ILeaveInfo[]> {
     try {
-      const data = await this.leaveInfoRepository.find(findOptions);
+      const data = await this.leaveInfoRepository.find({
+        ...findOptions,
+        order: { created_at: "DESC" },
+      });
       return LeaveInfoMapperInstance.mapMany(data);
     } catch (err) {
       throw new CustomException(LeaveInfoRepository.name, "find", err);
