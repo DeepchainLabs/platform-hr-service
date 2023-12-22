@@ -9,6 +9,7 @@ import {
   JoinColumn,
 } from "typeorm";
 import { LeaveType } from "./leave-type.entity";
+import { LeaveApplication } from "./leave-application.entity";
 
 @Entity("leave_categories")
 export class LeaveCategory {
@@ -61,4 +62,8 @@ export class LeaveCategory {
   @OneToMany(() => LeaveType, (type) => type.category)
   @JoinColumn({ name: "id", referencedColumnName: "category_id" })
   types?: LeaveType[];
+
+  @OneToMany(() => LeaveApplication, (type) => type.category)
+  @JoinColumn({ name: "id", referencedColumnName: "category_id" })
+  application?: LeaveApplication[];
 }

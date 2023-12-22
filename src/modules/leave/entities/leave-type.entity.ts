@@ -63,4 +63,8 @@ export class LeaveType {
   @ManyToOne(() => LeaveCategory)
   @JoinColumn({ name: "category_id", referencedColumnName: "id" })
   category?: LeaveCategory;
+
+  @OneToMany(() => LeaveApplication, (map) => map.type)
+  @JoinColumn({ name: "id", referencedColumnName: "leave_type_id" })
+  applications?: LeaveApplication[];
 }

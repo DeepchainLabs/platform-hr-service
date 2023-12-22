@@ -11,6 +11,7 @@ import {
 } from "typeorm";
 import { LeaveType } from "./leave-type.entity";
 import { LeaveAttachment } from "./leave-attachment.entity";
+import { LeaveCategory } from "./leave-category.entity";
 
 @Entity("leave_applications")
 export class LeaveApplication {
@@ -123,9 +124,13 @@ export class LeaveApplication {
   // @JoinColumn({ name: 'applied_by', referencedColumnName: 'id' })
   // approvedUser?: User;
 
-  // @ManyToOne(() => LeaveType)
-  // @JoinColumn({ name: "leave_type_id", referencedColumnName: "id" })
-  // type?: LeaveType;
+  @ManyToOne(() => LeaveCategory)
+  @JoinColumn({ name: "category_id", referencedColumnName: "id" })
+  category?: LeaveCategory;
+
+  @ManyToOne(() => LeaveType)
+  @JoinColumn({ name: "leave_type_id", referencedColumnName: "id" })
+  type?: LeaveType;
 
   @OneToMany(() => LeaveAttachment, (map) => map.application)
   @JoinColumn({ name: "id", referencedColumnName: "application_id" })
