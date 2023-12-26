@@ -5,7 +5,7 @@ import { QueryParserPipe } from "src/common/pipes/queryParser.pipe";
 import { paginateResponse } from "src/common/helpers/paginate-response";
 import { IReturnType } from "src/common/interfaces/return-type.interface";
 import { CreateCalendarDto, UpdateCalendarDto } from "../dto";
-import { EventPattern, MessagePattern } from "@nestjs/microservices";
+import { MessagePattern } from "@nestjs/microservices";
 
 @ApiTags("Calendar")
 @Controller("calendar")
@@ -37,53 +37,53 @@ export class CalendarController {
    * TODO Done
    */
   @MessagePattern("GET_ONE_CALENDAR_BY_ID")
-  findOne({
+  async findOne({
     findOptions,
     id,
   }: {
     findOptions: any;
     id: string;
   }): Promise<IReturnType> {
-    return this.calendarService.findOne(findOptions, id);
+    return await this.calendarService.findOne(findOptions, id);
   }
   /**
    *
    * TODO done
    */
-  @EventPattern("CREATE_ONE_CALENDAR")
+  @MessagePattern("CREATE_ONE_CALENDAR")
   @ApiBody({ type: CreateCalendarDto })
-  createOne({ body }: { body: CreateCalendarDto }) {
-    return this.calendarService.createOne(body);
+  async createOne({ body }: { body: CreateCalendarDto }) {
+    return await this.calendarService.createOne(body);
   }
 
   /**
    * TODO done
    */
-  @EventPattern("UPDATE_ONE_CALENDAR")
+  @MessagePattern("UPDATE_ONE_CALENDAR")
   @ApiBody({ type: UpdateCalendarDto })
-  patchOne({
+  async patchOne({
     id,
     body,
   }: {
     id: string;
     body: UpdateCalendarDto;
   }): Promise<IReturnType> {
-    return this.calendarService.patchOne(id, body);
+    return await this.calendarService.patchOne(id, body);
   }
 
   /**
    * TODO Done
    */
-  @EventPattern("DELETE_CALENDAR")
-  delete({ id }: { id: string }) {
-    return this.calendarService.deleteOne(id);
+  @MessagePattern("DELETE_CALENDAR")
+  async delete({ id }: { id: string }) {
+    return await this.calendarService.deleteOne(id);
   }
 
   /**
    * TODO Done
    */
   @MessagePattern("UPCOMING_CALENDAR_EVENT")
-  getUpcomingEvents(): Promise<IReturnType> {
-    return this.calendarService.getUpcomingEvents();
+  async getUpcomingEvents(): Promise<IReturnType> {
+    return await this.calendarService.getUpcomingEvents();
   }
 }

@@ -43,14 +43,14 @@ export class CalendarTypeController {
   /**
    * TODO Done
    */
-  @EventPattern("CREATE_CALENDAR_TYPE")
-  createOne({
+  @MessagePattern("CREATE_CALENDAR_TYPE")
+  async createOne({
     body,
     user_id,
   }: {
     body: CreateCalendarTypeDto;
     user_id: string;
   }) {
-    return this.calendarTypeService.createOne(body, user_id);
+    return await this.calendarTypeService.createOne(body, user_id);
   }
 }
