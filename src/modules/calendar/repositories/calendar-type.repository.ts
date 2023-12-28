@@ -115,7 +115,7 @@ export class CalendarTypeRepository {
   // TODO: what to return here
   async delete(id: string): Promise<any> {
     try {
-      return await this.calendarTypeRepository.softDelete({ id: id });
+      return await this.calendarTypeRepository.delete(id);
     } catch (err) {
       throw new CustomException(CalendarTypeRepository.name, "delete", err);
     }
