@@ -7,6 +7,7 @@ import { LeaveCategoryRepository } from "../repositories/leave-category.reposito
 import { ILeaveCategory } from "../interfaces/leave-category.interface";
 import { CreateLeaveCategoryDto } from "../dto/create-leave-category.dto";
 import { UpdateLeaveCategoryDto } from "../dto/update-leave-category.dto";
+import { RpcException } from "@nestjs/microservices";
 
 @Injectable()
 export class LeaveCategoryService {
@@ -97,43 +98,37 @@ export class LeaveCategoryService {
   }
 
   async createOne(dto: CreateLeaveCategoryDto): Promise<IReturnType> {
-    try {
-      const data = await this.leaveTypeRepository.create(dto);
+    // try {
+    const data = await this.leaveTypeRepository.create(dto);
 
-      return {
-        success: true,
-        message: "",
-        data: data,
-      };
-    } catch (err) {
-      throw new CustomException(LeaveCategoryService.name, "createOne", err);
-    }
+    return {
+      success: true,
+      message: "Category Created",
+      data: data,
+    };
+    // } catch (err) {
+    //   throw new CustomException(LeaveCategoryService.name, "createOne", err);
+    // }
   }
 
   async patchOne(
     id: string,
     dto: UpdateLeaveCategoryDto,
   ): Promise<IReturnType> {
-    try {
-      const leaveType = await this.leaveTypeRepository.findOneById(id);
-      if (!leaveType)
-        throw new HttpExceptionWithLog(
-          "Leave type not found",
-          HttpStatus.NOT_FOUND,
-          LeaveCategoryService.name,
-          "patchOne",
-        );
+    // try {
+    const leaveType = await this.leaveTypeRepository.findOneById(id);
+    if (!leaveType) throw new RpcException("Leave type not found");
 
-      const data = await this.leaveTypeRepository.update(id, dto);
+    const data = await this.leaveTypeRepository.update(id, dto);
 
-      return {
-        success: true,
-        message: "",
-        data: data,
-      };
-    } catch (err) {
-      throw new CustomException(LeaveCategoryService.name, "patchOne", err);
-    }
+    return {
+      success: true,
+      message: "Category Updated",
+      data: data,
+    };
+    // } catch (err) {
+    //   throw new CustomException(LeaveCategoryService.name, "patchOne", err);
+    // }
   }
 
   async deleteOne(id: string): Promise<IReturnType> {

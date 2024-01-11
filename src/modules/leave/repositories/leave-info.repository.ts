@@ -5,6 +5,7 @@ import { LeaveInfoMapperInstance } from "../mappers/leave-info.mapper";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { CustomException } from "src/common/exceptions/custom.exception";
+import { RpcException } from "@nestjs/microservices";
 
 @Injectable()
 export class LeaveInfoRepository {
@@ -51,7 +52,7 @@ export class LeaveInfoRepository {
       const info = await this.leaveInfoRepository.findOne(findOptions);
       return info && LeaveInfoMapperInstance.mapOne(info);
     } catch (err) {
-      throw new CustomException(LeaveInfoRepository.name, "findOne", err);
+      throw new RpcException("findOne" + err);
     }
   }
 
@@ -60,7 +61,7 @@ export class LeaveInfoRepository {
       const info = await this.leaveInfoRepository.save(data);
       return LeaveInfoMapperInstance.mapOne(info);
     } catch (err) {
-      throw new CustomException(LeaveInfoRepository.name, "create", err);
+      throw new RpcException("create" + err);
     }
   }
 

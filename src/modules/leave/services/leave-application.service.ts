@@ -20,7 +20,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import { IReturnType } from "src/common/interfaces/return-type.interface";
 import { CustomException } from "src/common/exceptions/custom.exception";
 import { HttpExceptionWithLog } from "src/common/exceptions/HttpExceptionWithLog.exceptions";
-import { ClientRMQ } from "@nestjs/microservices";
+import { ClientRMQ, RpcException } from "@nestjs/microservices";
 import { Observable, firstValueFrom } from "rxjs";
 import { LeaveStatus } from "src/common/enums/leave-status.enum";
 import { getAxios } from "src/config/axios_config";
@@ -315,76 +315,66 @@ export class LeaveApplicationService {
     category_id: string,
     sessionId?: string,
   ): Promise<number> {
-    try {
-      let session;
-      /**
-       * if provides sessionId, get desired session or get current session for selected user
-       */
-      if (sessionId) {
-        session = (await this.leaveInfoService.findOneById(sessionId)).data;
-      } else {
-        session = (
-          await this.leaveInfoService.findOne({
-            where: { user_id: userId },
-            order: { created_at: "DESC" },
-          })
-        ).data;
-      }
-      /**
-       * if session info not found, throw exception
-       */
-      if (!session)
-        throw new HttpExceptionWithLog(
-          "This user has no leave information for selected/current session",
-          HttpStatus.NOT_FOUND,
-          LeaveApplicationService.name,
-          "getRemainingLeavesByTypeAndSession",
-        );
-
-      /**
-       * get info for desired leave type
-       */
-      // const type = (await this.leaveTypeService.findOneById(typeId)).data;
-      const category = (
-        await this.leaveCategoryService.findOneById(category_id)
+    // try {
+    let session;
+    /**
+     * if provides sessionId, get desired session or get current session for selected user
+     */
+    if (sessionId) {
+      session = (await this.leaveInfoService.findOneById(sessionId)).data;
+    } else {
+      session = (
+        await this.leaveInfoService.findOne({
+          where: { user_id: userId },
+          order: { created_at: "DESC" },
+        })
       ).data;
-      if (!category)
-        throw new HttpExceptionWithLog(
-          "category not found",
-          HttpStatus.NOT_FOUND,
-          LeaveApplicationService.name,
-          "getRemainingLeavesByTypeAndSession",
-        );
-
-      /**
-       * get all approved applications of selected user for selected session and type
-       * TODO: use sum function instead
-       */
-      const applications = await this.leaveApplicationRepository.find({
-        where: {
-          applied_for: userId,
-          category_id: category_id,
-          session_id: session.id,
-          status: LeaveStatus.APPROVED,
-        },
-      });
-
-      /**
-       * calculate total enjoyed leave by selected user for selected session and type
-       */
-      let daysUsed = 0;
-      applications.map((application) => {
-        daysUsed += application.num_of_working_days || 0;
-      });
-
-      return category.num_of_days_allowed - daysUsed;
-    } catch (err) {
-      throw new CustomException(
-        LeaveApplicationService.name,
-        "getRemainingLeavesByTypeAndSession",
-        err,
-      );
     }
+    /**
+     * if session info not found, throw exception
+     */
+    if (!session)
+      throw new RpcException(
+        "This user has no leave information for selected/current session",
+      );
+
+    /**
+     * get info for desired leave type
+     */
+    // const type = (await this.leaveTypeService.findOneById(typeId)).data;
+    const category = (await this.leaveCategoryService.findOneById(category_id))
+      .data;
+    if (!category) throw new RpcException("category not found");
+
+    /**
+     * get all approved applications of selected user for selected session and type
+     * TODO: use sum function instead
+     */
+    const applications = await this.leaveApplicationRepository.find({
+      where: {
+        applied_for: userId,
+        category_id: category_id,
+        session_id: session.id,
+        status: LeaveStatus.APPROVED,
+      },
+    });
+
+    /**
+     * calculate total enjoyed leave by selected user for selected session and type
+     */
+    let daysUsed = 0;
+    applications.map((application) => {
+      daysUsed += application.num_of_working_days || 0;
+    });
+
+    return category.num_of_days_allowed - daysUsed;
+    // } catch (err) {
+    //   throw new CustomException(
+    //     LeaveApplicationService.name,
+    //     "getRemainingLeavesByTypeAndSession",
+    //     err,
+    //   );
+    // }
   }
 
   /**
@@ -398,103 +388,95 @@ export class LeaveApplicationService {
   }
 
   async createOne(dto: CreateLeaveDto): Promise<IReturnType> {
-    try {
-      const users = await firstValueFrom(this.findManyUsers());
-      const appliedFor = users[dto.applied_for as string];
-      console.log({ appliedFor });
-      /**
-       * get current session info for user
-       */
-      let session = (
+    // try {
+    const users = await firstValueFrom(this.findManyUsers());
+    const appliedFor = users[dto.applied_for as string];
+    console.log({ appliedFor });
+    /**
+     * get current session info for user
+     */
+    let session = (
+      await this.leaveInfoService.findOne({
+        where: { user_id: dto.applied_for },
+        order: { created_at: "DESC" },
+      })
+    ).data;
+    if (session && moment(session?.end_date) < moment(new Date())) {
+      const newDate = moment(session?.end_date).add(1, "days").toDate();
+      await this.leaveInfoService.createOne({
+        user_id: dto.applied_for as string,
+        start_date: newDate,
+      });
+      session = (
         await this.leaveInfoService.findOne({
           where: { user_id: dto.applied_for },
           order: { created_at: "DESC" },
         })
       ).data;
-      if (session && moment(session?.end_date) < moment(new Date())) {
-        const newDate = moment(session?.end_date).add(1, "days").toDate();
-        await this.leaveInfoService.createOne({
-          user_id: dto.applied_for as string,
-          start_date: newDate,
-        });
-        session = (
-          await this.leaveInfoService.findOne({
-            where: { user_id: dto.applied_for },
-            order: { created_at: "DESC" },
-          })
-        ).data;
-      }
-      if (!session) {
-        //if session not available, creating one for this user with joining date
-        await this.leaveInfoService.createOne({
-          user_id: dto.applied_for as string,
-          start_date: appliedFor.registered_at,
-        });
-        session = (
-          await this.leaveInfoService.findOne({
-            where: { user_id: dto.applied_for },
-            order: { created_at: "DESC" },
-          })
-        ).data;
-      }
+    }
+    if (!session) {
+      //if session not available, creating one for this user with joining date
+      await this.leaveInfoService.createOne({
+        user_id: dto.applied_for as string,
+        start_date: appliedFor.registered_at,
+      });
+      session = (
+        await this.leaveInfoService.findOne({
+          where: { user_id: dto.applied_for },
+          order: { created_at: "DESC" },
+        })
+      ).data;
+    }
 
-      const remainingLeaves =
-        session &&
-        (await this.getRemainingLeavesByTypeAndSession(
-          dto.applied_for as string,
-          dto.category_id,
-          session.id as string,
-        ));
-      console.log({ remainingLeaves, days: dto.num_of_working_days });
+    const remainingLeaves =
+      session &&
+      (await this.getRemainingLeavesByTypeAndSession(
+        dto.applied_for as string,
+        dto.category_id,
+        session.id as string,
+      ));
+    console.log({ remainingLeaves, days: dto.num_of_working_days });
 
-      const sessionEndDistance =
-        session && moment(session.end_date).diff(dto.end_date, "days");
-      if (
-        (dto.num_of_working_days && +dto.num_of_working_days < 1) ||
-        (sessionEndDistance && sessionEndDistance < 0)
-      )
-        throw new HttpExceptionWithLog(
-          "Invalid date",
-          HttpStatus.BAD_REQUEST,
-          LeaveApplicationService.name,
-          "createOne",
-        );
+    const sessionEndDistance =
+      session && moment(session.end_date).diff(dto.end_date, "days");
+    if (
+      (dto.num_of_working_days && +dto.num_of_working_days < 1) ||
+      (sessionEndDistance && sessionEndDistance < 0)
+    )
+      throw new RpcException("Invalid date");
 
-      /**
-       * check if user requests for more leaves of requested type
-       * than his remaining leaves of that type
-       */
-      if (
-        dto.num_of_working_days &&
-        remainingLeaves &&
-        +dto.num_of_working_days > remainingLeaves
-      )
-        throw new HttpExceptionWithLog(
-          `You can apply for maximum ${remainingLeaves} days`,
-          HttpStatus.BAD_REQUEST,
-          LeaveApplicationService.name,
-          "createOne",
-        );
+    /**
+     * check if user requests for more leaves of requested type
+     * than his remaining leaves of that type
+     */
+    if (
+      dto.num_of_working_days &&
+      remainingLeaves &&
+      +dto.num_of_working_days > remainingLeaves
+    )
+      throw new RpcException(
+        `You can apply for maximum ${remainingLeaves} days`,
+      );
 
-      /**
-       * create a leave application for user
-       */
-      const data =
-        session &&
-        (await this.leaveApplicationRepository.create({
-          ...dto,
-          status: LeaveStatus.PENDING,
-          session_id: session.id,
-          created_by: dto.applied_by,
-        }));
-      const EMAILS = this.configService.get<string>("env.EMAILS");
-      console.log({ data });
-      const emails = this.convertToEmailArray(EMAILS as any);
-      let emails_data = [];
-      const capitalizedName =
-        appliedFor?.username?.charAt(0)?.toUpperCase() +
-        appliedFor?.username?.slice(1);
-      const emailBody = `
+    /**
+     * create a leave application for user
+     */
+    const data =
+      session &&
+      (await this.leaveApplicationRepository.create({
+        ...dto,
+        status: LeaveStatus.PENDING,
+        session_id: session.id,
+        created_by: dto.applied_by,
+      }));
+    const EMAILS = this.configService.get<string>("env.EMAILS");
+    console.log({ data });
+    const emails = this.convertToEmailArray(EMAILS as any);
+    let emails_data = [];
+    const capitalizedName =
+      appliedFor?.username?.charAt(0)?.toUpperCase() +
+      appliedFor?.username?.slice(1);
+    const emailBody = `
             <!DOCTYPE html>
             <html lang="en">
             <head>
@@ -610,14 +592,14 @@ export class LeaveApplicationService {
                       ? `${dto.num_of_working_days} days`
                       : `${dto.num_of_working_days} day`
                   }</span>  leave of absence starting from <span class="blue-text">${moment(
-        dto.start_date,
-      ).format("LL")}</span>  to <span class="blue-text">${moment(
-        dto.end_date,
-      ).format(
-        "LL",
-      )}</span> . The reason for my leave is <span class="blue-text">${
-        dto.reason
-      }</span> . During my absence, I will ensure that my responsibilities are taken care of, and I will provide any necessary assistance to my colleagues to ensure a smooth workflow.<br><br>
+      dto.start_date,
+    ).format("LL")}</span>  to <span class="blue-text">${moment(
+      dto.end_date,
+    ).format(
+      "LL",
+    )}</span> . The reason for my leave is <span class="blue-text">${
+      dto.reason
+    }</span> . During my absence, I will ensure that my responsibilities are taken care of, and I will provide any necessary assistance to my colleagues to ensure a smooth workflow.<br><br>
                   Please let me know if there are any specific procedures or tasks I need to complete before my leave. I will make sure to complete all pending work and hand over any ongoing projects to a colleague.<br><br>
                   Thank you for considering my request. I will ensure that my absence has minimal impact on the team's productivity. I look forward to your approval.
                 </p>
@@ -654,61 +636,59 @@ export class LeaveApplicationService {
             
             
                 `;
-      for await (const obj of emails) {
-        emails_data.push({
-          to: obj,
-          subject: `${capitalizedName + "'s"} New Leave Application`,
-          body: emailBody,
-        });
-      }
-      //TODO NEED TO SEND MAIL FROM HERE
-      // await this.sendEmail(emails_data);
-      this.sendMail(emails_data);
-      const text = `
+    for await (const obj of emails) {
+      emails_data.push({
+        to: obj,
+        subject: `${capitalizedName + "'s"} New Leave Application`,
+        body: emailBody,
+      });
+    }
+    //TODO NEED TO SEND MAIL FROM HERE
+    // await this.sendEmail(emails_data);
+    this.sendMail(emails_data);
+    const text = `
 **<@${appliedFor.discord_id}>** requested for ${
-        dto.num_of_working_days && dto.num_of_working_days > 1
-          ? `${dto.num_of_working_days} days `
-          : `${dto.num_of_working_days} day `
-      } leave.
+      dto.num_of_working_days && dto.num_of_working_days > 1
+        ? `${dto.num_of_working_days} days `
+        : `${dto.num_of_working_days} day `
+    } leave.
 **Requested Date : **${moment(dto.start_date).format("LL")} to ${moment(
-        dto.end_date,
-      ).format("LL")}
+      dto.end_date,
+    ).format("LL")}
 **Leave Reason : **${dto.reason}
 **Click here to approve,** https://tracker.deepchainlabs.com/leave/approve?id=${
-        data?.id
-      }
-                `;
-      const embed = new EmbedBuilder()
-        .setColor(0x2465ef)
-        .setURL("https://tracker.deepchainlabs.com/")
-        .setDescription(text)
-        .setAuthor({
-          name: `${
-            appliedFor?.profile?.first_name +
-            " " +
-            appliedFor?.profile?.last_name
-          } Applied for a new leave application`,
-          iconURL: `https://api.tracker.deepchainlabs.com${appliedFor?.profile?.image?.slice(
-            1,
-          )}`,
-        });
-      //TODO NEED TO SEND DISCORD NOTIFICATION FROM HERE
-      // await this.emailService.sendDiscordNotification([embed]);
-
-      const HR_CHANNEL = this.configService.get<string>("env.HR_CHANNEL");
-      this.sendDiscordNotification({
-        channelId: HR_CHANNEL,
-        msg: [embed],
-      });
-      console.log("here....", data);
-      return {
-        success: true,
-        message: "",
-        data: data,
-      };
-    } catch (err) {
-      throw new CustomException(LeaveApplicationService.name, "createOne", err);
+      data?.id
     }
+                `;
+    const embed = new EmbedBuilder()
+      .setColor(0x2465ef)
+      .setURL("https://tracker.deepchainlabs.com/")
+      .setDescription(text)
+      .setAuthor({
+        name: `${
+          appliedFor?.profile?.first_name + " " + appliedFor?.profile?.last_name
+        } Applied for a new leave application`,
+        iconURL: `https://api.tracker.deepchainlabs.com${appliedFor?.profile?.image?.slice(
+          1,
+        )}`,
+      });
+    //TODO NEED TO SEND DISCORD NOTIFICATION FROM HERE
+    // await this.emailService.sendDiscordNotification([embed]);
+
+    const HR_CHANNEL = this.configService.get<string>("env.HR_CHANNEL");
+    this.sendDiscordNotification({
+      channelId: HR_CHANNEL,
+      msg: [embed],
+    });
+    console.log("here....", data);
+    return {
+      success: true,
+      message: "Leave Application Created",
+      data: data,
+    };
+    // } catch (err) {
+    //   throw new CustomException(LeaveApplicationService.name, "createOne", err);
+    // }
   }
   convertToEmailArray(emails: string): string[] {
     return emails.split(",").map((email) => email.trim());
@@ -838,75 +818,66 @@ export class LeaveApplicationService {
   }
 
   async patchOne(id: string, dto: UpdateLeaveDto): Promise<IReturnType> {
-    try {
-      const users = await firstValueFrom(this.findManyUsers());
-      const appliedApplicationFor = users[dto?.applied_for as string];
-      const getUserByRawQuery = users[dto.applied_for as string];
-      const getApprovedByUser = users[dto.approved_by as string];
+    // try {
+    const users = await firstValueFrom(this.findManyUsers());
+    const appliedApplicationFor = users[dto?.applied_for as string];
+    const getUserByRawQuery = users[dto.applied_for as string];
+    const getApprovedByUser = users[dto.approved_by as string];
 
-      const remainingLeaves: any =
-        dto.category_id &&
-        dto.session_id &&
-        (await this.getRemainingLeavesByTypeAndSession(
-          dto.applied_for as string,
-          dto.category_id,
-          dto.session_id as string,
-        ));
-      console.log("Debug Info:", {
-        category: dto.category_id,
-        session: dto.session_id,
-        num_of_working_days: dto.num_of_working_days,
-        remainingLeaves: remainingLeaves,
-        condition: ((dto.num_of_working_days as number) >
-          remainingLeaves) as any,
-      });
+    const remainingLeaves: any =
+      dto.category_id &&
+      dto.session_id &&
+      (await this.getRemainingLeavesByTypeAndSession(
+        dto.applied_for as string,
+        dto.category_id,
+        dto.session_id as string,
+      ));
+    // console.log("Debug Info:", {
+    //   category: dto.category_id,
+    //   session: dto.session_id,
+    //   num_of_working_days: dto.num_of_working_days,
+    //   remainingLeaves: remainingLeaves,
+    //   condition: ((dto.num_of_working_days as number) >
+    //     remainingLeaves) as any,
+    // });
 
-      if (((dto.num_of_working_days as number) > remainingLeaves) as any) {
-        throw new HttpExceptionWithLog(
-          `You can apply for a maximum of ${remainingLeaves} days`,
-          HttpStatus.BAD_REQUEST,
-          LeaveApplicationService.name,
-          "createOne",
-        );
-      }
-      const leave = await this.leaveApplicationRepository.findOneById(id);
-      if (!leave)
-        throw new HttpExceptionWithLog(
-          "leave application not found",
-          HttpStatus.NOT_FOUND,
-          LeaveApplicationService.name,
-          "patchOne",
-        );
+    if (((dto.num_of_working_days as number) > remainingLeaves) as any) {
+      throw new RpcException(
+        `You can apply for a maximum of ${remainingLeaves} days`,
+      );
+    }
+    const leave = await this.leaveApplicationRepository.findOneById(id);
+    if (!leave) throw new RpcException("leave application not found");
 
-      const data = await this.leaveApplicationRepository.update(id, dto);
+    const data = await this.leaveApplicationRepository.update(id, dto);
 
-      const EMAILS = this.configService.get<string>("env.EMAILS");
+    const EMAILS = this.configService.get<string>("env.EMAILS");
 
-      const emails = this.convertToEmailArray(EMAILS as any);
-      let emails_data = [];
-      const capitalizedName =
-        appliedApplicationFor?.username?.charAt(0)?.toUpperCase() +
-        appliedApplicationFor?.username?.slice(1);
-      const capitalizedApplicant =
-        appliedApplicationFor?.username?.charAt(0)?.toUpperCase() +
-        appliedApplicationFor?.username?.slice(1);
+    const emails = this.convertToEmailArray(EMAILS as any);
+    let emails_data = [];
+    const capitalizedName =
+      appliedApplicationFor?.username?.charAt(0)?.toUpperCase() +
+      appliedApplicationFor?.username?.slice(1);
+    const capitalizedApplicant =
+      appliedApplicationFor?.username?.charAt(0)?.toUpperCase() +
+      appliedApplicationFor?.username?.slice(1);
 
-      //Sending Mail Notification to Admins
-      for (const obj of emails) {
-        emails_data.push({
-          to: obj,
-          subject: `Leave Application ${
-            dto.status === "Pending" ? `Updated ` : dto.status
-          }`,
-          body: `<h1><strong>${capitalizedName} ${
-            dto.status === "Pending" ? `Updated` : dto.status
-          } a Leave Application ${
-            dto.status === "Approved"
-              ? `✅`
-              : dto.status === "Rejected"
-              ? `❌`
-              : `🛠️ `
-          }</strong></h1> 
+    //Sending Mail Notification to Admins
+    for (const obj of emails) {
+      emails_data.push({
+        to: obj,
+        subject: `Leave Application ${
+          dto.status === "Pending" ? `Updated ` : dto.status
+        }`,
+        body: `<h1><strong>${capitalizedName} ${
+          dto.status === "Pending" ? `Updated` : dto.status
+        } a Leave Application ${
+          dto.status === "Approved"
+            ? `✅`
+            : dto.status === "Rejected"
+            ? `❌`
+            : `🛠️ `
+        }</strong></h1> 
                     </br> 
                     <h3>Requested Date : ${moment(dto.start_date).format(
                       "LL",
@@ -920,101 +891,101 @@ export class LeaveApplicationService {
                     <h3>Click this link for approve, https://tracker.deepchainlabs.com/leave/approve?id=${
                       data?.id
                     }</h3>`,
-        });
-      }
-      //TODO NEED TO SEND MAIL FROM HERE
-      this.sendMail(emails_data);
-      // await this.sendEmail(emails_data);
-      //   await this.emailService.sendEmailJob(emails_data);
-      //Sending Discord Notification to Admins
-      const text = `
+      });
+    }
+    //TODO NEED TO SEND MAIL FROM HERE
+    this.sendMail(emails_data);
+    // await this.sendEmail(emails_data);
+    //   await this.emailService.sendEmailJob(emails_data);
+    //Sending Discord Notification to Admins
+    const text = `
 **<@${appliedApplicationFor.discord_id}>** ${
-        dto.status === "Pending" ? `Updated` : dto.status
-      } a leave application ${
-        dto.status === "Approved"
-          ? `✅`
-          : dto.status === "Rejected"
-          ? `❌`
-          : `🛠️ `
-      }
+      dto.status === "Pending" ? `Updated` : dto.status
+    } a leave application ${
+      dto.status === "Approved"
+        ? `✅`
+        : dto.status === "Rejected"
+        ? `❌`
+        : `🛠️ `
+    }
 **Requested Date : **${moment(dto.start_date).format("LL")} to ${moment(
-        dto.end_date,
-      ).format("LL")}
+      dto.end_date,
+    ).format("LL")}
 **Leave Applicant : **<@${appliedApplicationFor?.discord_id}>
 **Reason : **${dto.reason}
 **Leave Day : **${dto.num_of_working_days}
 **Click here to approve,** https://tracker.deepchainlabs.com/leave/approve?id=${
-        data?.id
-      }
+      data?.id
+    }
                 `;
-      const embed = new EmbedBuilder()
-        // .setColor(0x606ffb)
-        // .setTitle(`New Leave Application`)
-        .setURL("https://tracker.deepchainlabs.com/")
-        .setDescription(text);
+    const embed = new EmbedBuilder()
+      // .setColor(0x606ffb)
+      // .setTitle(`New Leave Application`)
+      .setURL("https://tracker.deepchainlabs.com/")
+      .setDescription(text);
 
-      if (dto.status === "Approved") {
-        embed
-          .setAuthor({
-            name: `${
-              getApprovedByUser?.profile?.first_name +
-              " " +
-              getApprovedByUser?.profile?.last_name
-            } Approved a leave application`,
-            iconURL: `https://api.tracker.deepchainlabs.com${getApprovedByUser?.profile?.image?.slice(
-              1,
-            )}`,
-          })
-          .setColor(0x4fd240);
-      } else if (dto.status === "Rejected") {
-        embed
-          .setAuthor({
-            name: `${
-              getApprovedByUser?.profile?.first_name +
-              " " +
-              getApprovedByUser?.profile?.last_name
-            } Rejected a leave application`,
-            iconURL: `https://api.tracker.deepchainlabs.com${getApprovedByUser?.profile?.image?.slice(
-              1,
-            )}`,
-          })
-          .setColor(0xef142e);
-      } else {
-        embed
-          .setAuthor({
-            name: `${
-              getUserByRawQuery?.profile?.first_name +
-              " " +
-              getUserByRawQuery?.profile?.last_name
-            } Updated a  leave application`,
-            iconURL: `https://api.tracker.deepchainlabs.com${getUserByRawQuery?.profile?.image?.slice(
-              1,
-            )}`,
-          })
-          .setColor(0xeecb0a);
-      }
+    if (dto.status === "Approved") {
+      embed
+        .setAuthor({
+          name: `${
+            getApprovedByUser?.profile?.first_name +
+            " " +
+            getApprovedByUser?.profile?.last_name
+          } Approved a leave application`,
+          iconURL: `https://api.tracker.deepchainlabs.com${getApprovedByUser?.profile?.image?.slice(
+            1,
+          )}`,
+        })
+        .setColor(0x4fd240);
+    } else if (dto.status === "Rejected") {
+      embed
+        .setAuthor({
+          name: `${
+            getApprovedByUser?.profile?.first_name +
+            " " +
+            getApprovedByUser?.profile?.last_name
+          } Rejected a leave application`,
+          iconURL: `https://api.tracker.deepchainlabs.com${getApprovedByUser?.profile?.image?.slice(
+            1,
+          )}`,
+        })
+        .setColor(0xef142e);
+    } else {
+      embed
+        .setAuthor({
+          name: `${
+            getUserByRawQuery?.profile?.first_name +
+            " " +
+            getUserByRawQuery?.profile?.last_name
+          } Updated a  leave application`,
+          iconURL: `https://api.tracker.deepchainlabs.com${getUserByRawQuery?.profile?.image?.slice(
+            1,
+          )}`,
+        })
+        .setColor(0xeecb0a);
+    }
 
-      //TODO NEED TO SEND DISCORD NOTIFICATION FROM HERE
-      // await this.emailService.sendDiscordNotification([embed]);
-      const HR_CHANNEL = this.configService.get<string>("env.HR_CHANNEL");
-      this.sendDiscordNotification({
-        channelId: HR_CHANNEL,
-        msg: [embed],
-      });
-      //Sending Notification to applicant if Application approved or rejected
-      const applicationMail = [
-        {
-          to: appliedApplicationFor?.secondary_email,
-          subject: `Leave Application ${dto.status}`,
-          body: `<h1><strong>${capitalizedName} ${
-            dto.status
-          } Your Leave Application ${
-            dto.status === "Approved"
-              ? `✅`
-              : dto.status === "Rejected"
-              ? `❌`
-              : `🛠️`
-          }</strong></h1>
+    //TODO NEED TO SEND DISCORD NOTIFICATION FROM HERE
+    // await this.emailService.sendDiscordNotification([embed]);
+    const HR_CHANNEL = this.configService.get<string>("env.HR_CHANNEL");
+    this.sendDiscordNotification({
+      channelId: HR_CHANNEL,
+      msg: [embed],
+    });
+    //Sending Notification to applicant if Application approved or rejected
+    const applicationMail = [
+      {
+        to: appliedApplicationFor?.secondary_email,
+        subject: `Leave Application ${dto.status}`,
+        body: `<h1><strong>${capitalizedName} ${
+          dto.status
+        } Your Leave Application ${
+          dto.status === "Approved"
+            ? `✅`
+            : dto.status === "Rejected"
+            ? `❌`
+            : `🛠️`
+        }</strong></h1>
                     </br>
                     <h3>Requested Date : ${moment(dto.start_date).format(
                       "LL",
@@ -1030,32 +1001,32 @@ export class LeaveApplicationService {
                        : ``
                    }
                     <h3>Leave Day :${dto.num_of_working_days}</h3>`,
-        },
-      ];
+      },
+    ];
 
-      if (
-        (dto.status === "Rejected" || dto.status === "Approved") &&
-        appliedApplicationFor?.secondary_email
-      ) {
-        //TODO NEED TO SEND EMAIL FROM HERE
-        // await this.emailService.sendEmailJob(applicationMail);
-        await this.sendEmail(applicationMail);
-        // await this.sendNotification(
-        //   dto.applied_for as string,
-        //   dto.approved_by as string,
-        //   id,
-        //   dto.status,
-        // );
-      }
-      console.log({ data });
-      return {
-        success: true,
-        message: "",
-        data: data,
-      };
-    } catch (err) {
-      throw new CustomException(LeaveApplicationService.name, "patchOne", err);
+    if (
+      (dto.status === "Rejected" || dto.status === "Approved") &&
+      appliedApplicationFor?.secondary_email
+    ) {
+      //TODO NEED TO SEND EMAIL FROM HERE
+      // await this.emailService.sendEmailJob(applicationMail);
+      await this.sendEmail(applicationMail);
+      // await this.sendNotification(
+      //   dto.applied_for as string,
+      //   dto.approved_by as string,
+      //   id,
+      //   dto.status,
+      // );
     }
+    console.log({ data });
+    return {
+      success: true,
+      message: "",
+      data: data,
+    };
+    // } catch (err) {
+    //   throw new CustomException(LeaveApplicationService.name, "patchOne", err);
+    // }
   }
   //   async sendNotification(
   //     applied_for: string,

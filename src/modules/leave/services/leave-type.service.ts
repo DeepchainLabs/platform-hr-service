@@ -5,6 +5,7 @@ import { CustomException } from "src/common/exceptions/custom.exception";
 import { HttpExceptionWithLog } from "src/common/exceptions/HttpExceptionWithLog.exceptions";
 import { LeaveTypeRepository } from "../repositories/leave-type.repository";
 import { ILeaveType } from "../interfaces/leave-type.interface";
+import { RpcException } from "@nestjs/microservices";
 
 @Injectable()
 export class LeaveTypeService {
@@ -95,40 +96,34 @@ export class LeaveTypeService {
   }
 
   async createOne(dto: CreateLeaveTypeDto): Promise<IReturnType> {
-    try {
-      const data = await this.leaveTypeRepository.create(dto);
+    // try {
+    const data = await this.leaveTypeRepository.create(dto);
 
-      return {
-        success: true,
-        message: "",
-        data: data,
-      };
-    } catch (err) {
-      throw new CustomException(LeaveTypeService.name, "createOne", err);
-    }
+    return {
+      success: true,
+      message: "Type Created",
+      data: data,
+    };
+    // } catch (err) {
+    //   throw new CustomException(LeaveTypeService.name, "createOne", err);
+    // }
   }
 
   async patchOne(id: string, dto: UpdateLeaveTypeDto): Promise<IReturnType> {
-    try {
-      const leaveType = await this.leaveTypeRepository.findOneById(id);
-      if (!leaveType)
-        throw new HttpExceptionWithLog(
-          "Leave type not found",
-          HttpStatus.NOT_FOUND,
-          LeaveTypeService.name,
-          "patchOne",
-        );
+    // try {
+    const leaveType = await this.leaveTypeRepository.findOneById(id);
+    if (!leaveType) throw new RpcException("Leave type not found");
 
-      const data = await this.leaveTypeRepository.update(id, dto);
+    const data = await this.leaveTypeRepository.update(id, dto);
 
-      return {
-        success: true,
-        message: "",
-        data: data,
-      };
-    } catch (err) {
-      throw new CustomException(LeaveTypeService.name, "patchOne", err);
-    }
+    return {
+      success: true,
+      message: "Type Updated",
+      data: data,
+    };
+    // } catch (err) {
+    //   throw new CustomException(LeaveTypeService.name, "patchOne", err);
+    // }
   }
 
   async deleteOne(id: string): Promise<IReturnType> {

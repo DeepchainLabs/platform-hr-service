@@ -84,14 +84,14 @@ export class LeaveTypeController {
    */
   @MessagePattern("UPDATE_ONE_LEAVE_APPLICATION_TYPE")
   @ApiBody({ type: UpdateLeaveTypeDto })
-  patchOne({
+  async patchOne({
     id,
     body,
   }: {
     id: string;
     body: CreateLeaveTypeDto;
   }): Promise<IReturnType> {
-    return this.leaveTypeService.patchOne(id, body);
+    return await this.leaveTypeService.patchOne(id, body);
   }
 
   /**

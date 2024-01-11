@@ -5,6 +5,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { CustomException } from "src/common/exceptions/custom.exception";
 import { ILeaveType } from "../interfaces/leave-type.interface";
+import { RpcException } from "@nestjs/microservices";
 
 @Injectable()
 export class LeaveTypeRepository {
@@ -56,7 +57,7 @@ export class LeaveTypeRepository {
       });
       return leaveType && LeaveTypeMapperInstance.mapOne(leaveType);
     } catch (err) {
-      throw new CustomException(LeaveTypeRepository.name, "findOneById", err);
+      throw new RpcException("findOneById" + err);
     }
   }
 
@@ -81,7 +82,7 @@ export class LeaveTypeRepository {
       const leaveType = await this.leaveTypesRepository.save(createdOne);
       return LeaveTypeMapperInstance.mapOne(leaveType);
     } catch (err) {
-      throw new CustomException(LeaveTypeRepository.name, "create", err);
+      throw new RpcException("create" + err);
     }
   }
 
@@ -94,7 +95,7 @@ export class LeaveTypeRepository {
         .execute();
       return await this.findOneById(id);
     } catch (err) {
-      throw new CustomException(LeaveTypeRepository.name, "update", err);
+      throw new RpcException("update" + err);
     }
   }
 

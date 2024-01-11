@@ -75,8 +75,8 @@ export class LeaveCategoryController {
    */
   @MessagePattern("CREATE_ONE_LEAVE_APPLICATION_CATEGORY")
   @ApiBody({ type: CreateLeaveCategoryDto })
-  createOne({ body }: { body: CreateLeaveCategoryDto }) {
-    return this.leaveCategoryService.createOne(body);
+  async createOne({ body }: { body: CreateLeaveCategoryDto }) {
+    return await this.leaveCategoryService.createOne(body);
   }
 
   /**
@@ -84,14 +84,14 @@ export class LeaveCategoryController {
    */
   @MessagePattern("UPDATE_ONE_LEAVE_APPLICATION_CATEGORY")
   @ApiBody({ type: UpdateLeaveCategoryDto })
-  patchOne({
+  async patchOne({
     id,
     body,
   }: {
     id: string;
     body: CreateLeaveCategoryDto;
   }): Promise<IReturnType> {
-    return this.leaveCategoryService.patchOne(id, body);
+    return await this.leaveCategoryService.patchOne(id, body);
   }
 
   /**

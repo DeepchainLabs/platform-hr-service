@@ -6,6 +6,7 @@ import { Repository } from "typeorm";
 import { CustomException } from "src/common/exceptions/custom.exception";
 import { ILeaveCategory } from "../interfaces/leave-category.interface";
 import { LeaveCategory } from "../entities/leave-category.entity";
+import { RpcException } from "@nestjs/microservices";
 
 @Injectable()
 export class LeaveCategoryRepository {
@@ -65,11 +66,7 @@ export class LeaveCategoryRepository {
       });
       return leaveType && LeaveTypeMapperInstance.mapOne(leaveType);
     } catch (err) {
-      throw new CustomException(
-        LeaveCategoryRepository.name,
-        "findOneById",
-        err,
-      );
+      throw new RpcException("Category not found");
     }
   }
 
@@ -94,7 +91,7 @@ export class LeaveCategoryRepository {
       const leaveType = await this.leaveCategoryRepository.save(createdOne);
       return LeaveTypeMapperInstance.mapOne(leaveType);
     } catch (err) {
-      throw new CustomException(LeaveCategoryRepository.name, "create", err);
+      throw new RpcException("create" + err);
     }
   }
 
@@ -110,7 +107,7 @@ export class LeaveCategoryRepository {
         .execute();
       return await this.findOneById(id);
     } catch (err) {
-      throw new CustomException(LeaveCategoryRepository.name, "update", err);
+      throw new RpcException("update" + err);
     }
   }
 

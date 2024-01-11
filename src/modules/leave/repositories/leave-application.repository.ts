@@ -5,6 +5,7 @@ import { LeaveApplicationMapperInstance } from "../mappers/leave-application.map
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { CustomException } from "src/common/exceptions/custom.exception";
+import { RpcException } from "@nestjs/microservices";
 
 @Injectable()
 export class LeaveApplicationRepository {
@@ -18,7 +19,7 @@ export class LeaveApplicationRepository {
       const data = await this.leaveRepository.find(findOptions);
       return LeaveApplicationMapperInstance.mapMany(data);
     } catch (err) {
-      throw new CustomException(LeaveApplicationRepository.name, "find", err);
+      throw new RpcException("find" + err);
     }
   }
 
@@ -84,7 +85,7 @@ export class LeaveApplicationRepository {
       const leave = await this.leaveRepository.save(data);
       return LeaveApplicationMapperInstance.mapOne(leave);
     } catch (err) {
-      throw new CustomException(LeaveApplicationRepository.name, "create", err);
+      throw new RpcException("create" + err);
     }
   }
 

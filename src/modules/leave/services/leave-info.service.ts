@@ -10,7 +10,7 @@ import { CustomException } from "src/common/exceptions/custom.exception";
 import { paginateResponse } from "src/common/helpers/paginate-response";
 import { HttpExceptionWithLog } from "src/common/exceptions/HttpExceptionWithLog.exceptions";
 import { firstValueFrom, Observable } from "rxjs";
-import { ClientRMQ } from "@nestjs/microservices";
+import { ClientRMQ, RpcException } from "@nestjs/microservices";
 
 @Injectable()
 export class LeaveInfoService {
@@ -90,27 +90,27 @@ export class LeaveInfoService {
         data: data,
       };
     } catch (err) {
-      throw new CustomException(LeaveInfoService.name, "findOneById", err);
+      throw new RpcException("findOneById" + err);
     }
   }
 
   async findOne(findOptions: any, id?: string) {
-    try {
-      if (id) {
-        findOptions.where = findOptions.where
-          ? { ...findOptions.where, id: id }
-          : { id: id };
-      }
-
-      const data = await this.leaveInfoRepository.findOne(findOptions);
-      return {
-        success: true,
-        message: "",
-        data: data,
-      };
-    } catch (err) {
-      throw new CustomException(LeaveInfoService.name, "findOne", err);
+    // try {
+    if (id) {
+      findOptions.where = findOptions.where
+        ? { ...findOptions.where, id: id }
+        : { id: id };
     }
+
+    const data = await this.leaveInfoRepository.findOne(findOptions);
+    return {
+      success: true,
+      message: "",
+      data: data,
+    };
+    // } catch (err) {
+    //   throw new CustomException(LeaveInfoService.name, "findOne", err);
+    // }
   }
 
   async getLatestInfo(userId: string, id?: string) {
@@ -208,57 +208,41 @@ export class LeaveInfoService {
   // }
 
   async createOne(dto: CreateLeaveInfoDto): Promise<IReturnType> {
-    try {
-      const users = await firstValueFrom(this.findManyUsers());
-      const user = users[dto.user_id];
-      // const user = await this.userDependency.getUser(
-      //     dto.user_id,
-      //     tenantId
-      // );
-      // if (!user)
-      //     throw new HttpExceptionWithLog(
-      //         'user not found',
-      //         HttpStatus.NOT_FOUND,
-      //         LeaveInfoService.name,
-      //         'createOne'
-      //     );
+    // try {
+    const users = await firstValueFrom(this.findManyUsers());
+    const user = users[dto.user_id];
+    if (!user) throw new RpcException("user not found");
 
-      const startDate = moment(new Date(dto.start_date)).format("YYYY/MM/DD");
-      const endDate = moment(startDate)
-        .add(1, "year")
-        .add(-1, "day")
-        .format("YYYY/MM/DD");
+    const startDate = moment(new Date(dto.start_date)).format("YYYY/MM/DD");
+    const endDate = moment(startDate)
+      .add(1, "year")
+      .add(-1, "day")
+      .format("YYYY/MM/DD");
 
-      // creating a unique session name
-      const session = `${user.username}: ${startDate} to ${endDate}`;
+    // creating a unique session name
+    const session = `${user.username}: ${startDate} to ${endDate}`;
 
-      const fetchInfo = await this.leaveInfoRepository.findOne({
-        where: { session: session },
-      });
-      if (fetchInfo)
-        throw new HttpExceptionWithLog(
-          "leave info already exists",
-          HttpStatus.CONFLICT,
-          LeaveInfoService.name,
-          "createOne",
-        );
+    const fetchInfo = await this.leaveInfoRepository.findOne({
+      where: { session: session },
+    });
+    if (fetchInfo) throw new RpcException("leave info already exists");
 
-      const info = {
-        ...dto,
-        session: session,
-        start_date: new Date(startDate),
-        end_date: new Date(endDate),
-      };
+    const info = {
+      ...dto,
+      session: session,
+      start_date: new Date(startDate),
+      end_date: new Date(endDate),
+    };
 
-      const data = await this.leaveInfoRepository.create(info);
-      return {
-        success: true,
-        message: "",
-        data: data,
-      };
-    } catch (err) {
-      throw new CustomException(LeaveInfoService.name, "createOne", err);
-    }
+    const data = await this.leaveInfoRepository.create(info);
+    return {
+      success: true,
+      message: "Session Created",
+      data: data,
+    };
+    // } catch (err) {
+    //   throw new CustomException(LeaveInfoService.name, "createOne", err);
+    // }
   }
 
   async patchOne(id: string, dto: UpdateLeaveInfoDto): Promise<IReturnType> {
