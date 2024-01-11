@@ -841,15 +841,19 @@ export class LeaveApplicationService {
     //     remainingLeaves) as any,
     // });
 
-    if (((dto.num_of_working_days as number) > remainingLeaves) as any) {
-      throw new RpcException(
-        `You can apply for a maximum of ${remainingLeaves} days`,
-      );
-    }
     const leave = await this.leaveApplicationRepository.findOneById(id);
     if (!leave) throw new RpcException("leave application not found");
-
-    const data = await this.leaveApplicationRepository.update(id, dto);
+    let data;
+    if (dto.status === "Rejected") {
+      data = await this.leaveApplicationRepository.update(id, dto);
+    } else {
+      if (((dto.num_of_working_days as number) > remainingLeaves) as any) {
+        throw new RpcException(
+          `You can apply for a maximum of ${remainingLeaves} days`,
+        );
+      }
+      data = await this.leaveApplicationRepository.update(id, dto);
+    }
 
     const EMAILS = this.configService.get<string>("env.EMAILS");
 
