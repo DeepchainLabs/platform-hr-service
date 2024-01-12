@@ -450,13 +450,14 @@ export class LeaveApplicationService {
      * check if user requests for more leaves of requested type
      * than his remaining leaves of that type
      */
+    // ((dto.num_of_working_days as number) > remainingLeaves) as any
     if (
       dto.num_of_working_days &&
       remainingLeaves &&
-      +dto.num_of_working_days > remainingLeaves
+      (dto.num_of_working_days as number) > +remainingLeaves
     )
       throw new RpcException(
-        `You can apply for maximum ${remainingLeaves} days`,
+        `You can apply for maximum ${remainingLeaves} days under this selected category`,
       );
 
     /**
@@ -850,7 +851,7 @@ export class LeaveApplicationService {
     } else {
       if (((dto.num_of_working_days as number) > remainingLeaves) as any) {
         throw new RpcException(
-          `You can apply for a maximum of ${remainingLeaves} days`,
+          `This user has not enough allocated days for this leave category`,
         );
       }
       data = await this.leaveApplicationRepository.update(id, dto);
