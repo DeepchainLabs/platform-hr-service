@@ -451,10 +451,15 @@ export class LeaveApplicationService {
      * than his remaining leaves of that type
      */
     // ((dto.num_of_working_days as number) > remainingLeaves) as any
+    console.log(
+      dto.num_of_working_days &&
+        remainingLeaves &&
+        (dto.num_of_working_days as number) > remainingLeaves,
+    );
     if (
       dto.num_of_working_days &&
       remainingLeaves &&
-      (dto.num_of_working_days as number) > +remainingLeaves
+      (dto.num_of_working_days as number) > remainingLeaves
     )
       throw new RpcException(
         `You can apply for maximum ${remainingLeaves} days under this selected category`,
@@ -847,6 +852,7 @@ export class LeaveApplicationService {
     if (!leave) throw new RpcException("leave application not found");
     let data;
     if (dto.status === "Rejected") {
+      dto.status = "2_Rejected";
       data = await this.leaveApplicationRepository.update(id, dto);
     } else {
       if (((dto.num_of_working_days as number) > remainingLeaves) as any) {
@@ -854,6 +860,7 @@ export class LeaveApplicationService {
           `This user has not enough allocated days for this leave category`,
         );
       }
+      dto.status = "1_Approved";
       data = await this.leaveApplicationRepository.update(id, dto);
     }
 
