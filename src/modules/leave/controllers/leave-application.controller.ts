@@ -28,12 +28,14 @@ export class LeaveApplicationController {
     page: number;
     limit: number;
   }) {
+    findOptions.take = +limit;
+    findOptions.skip = (+page - 1) * +limit;
     const data = await this.leaveService.findAllWithPagination(
       findOptions,
       page,
       limit,
     );
-    return paginateResponse(data, page, limit);
+    return paginateResponse(data, +page, +limit);
   }
 
   /**
