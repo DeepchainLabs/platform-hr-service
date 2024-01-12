@@ -74,6 +74,7 @@ export class LeaveApplicationService {
             image: user?.profile?.image,
           };
           d.applied_for = applied_for;
+          d.status = d.status.substring(2);
           res.push(d);
         });
       return [res, data[1]];
