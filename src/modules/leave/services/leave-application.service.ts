@@ -851,10 +851,17 @@ export class LeaveApplicationService {
     const leave = await this.leaveApplicationRepository.findOneById(id);
     if (!leave) throw new RpcException("leave application not found");
     let data;
+    if (dto.status === "Pending") {
+      if (remainingLeaves < (dto.num_of_working_days as number)) {
+        throw new RpcException("You have not enough allocated days");
+      }
+      dto.status = "0_Pending";
+      data = await this.leaveApplicationRepository.update(id, dto);
+    }
     if (dto.status === "Rejected") {
       dto.status = "2_Rejected";
       data = await this.leaveApplicationRepository.update(id, dto);
-    } else {
+    } else if (dto.status === "Approved") {
       if (((dto.num_of_working_days as number) > remainingLeaves) as any) {
         throw new RpcException(
           `This user has not enough allocated days for this leave category`,
