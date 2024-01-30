@@ -652,7 +652,11 @@ export class LeaveApplicationService {
     }
     //TODO NEED TO SEND MAIL FROM HERE
     // await this.sendEmail(emails_data);
-    this.sendMail(emails_data);
+    try {
+      this.sendMail(emails_data);
+    } catch (error) {
+      console.log("sending mail error - ", error);
+    }
     const text = `
 **<@${appliedFor.discord_id}>** requested for ${
       dto.num_of_working_days && dto.num_of_working_days > 1
@@ -663,9 +667,7 @@ export class LeaveApplicationService {
       dto.end_date,
     ).format("LL")}
 **Leave Reason : **${dto.reason}
-**Click here to approve,** https://tracker.deepchainlabs.com/leave/approve?id=${
-      data?.id
-    }
+**Click here to approve,** https://platform.deepchainlabs.com/hr/workplace/leave/manage-leaves
                 `;
     const embed = new EmbedBuilder()
       .setColor(0x2465ef)
@@ -675,9 +677,7 @@ export class LeaveApplicationService {
         name: `${
           appliedFor?.profile?.first_name + " " + appliedFor?.profile?.last_name
         } Applied for a new leave application`,
-        iconURL: `https://api.tracker.deepchainlabs.com${appliedFor?.profile?.image?.slice(
-          1,
-        )}`,
+        iconURL: `${appliedFor?.profile?.image}`,
       });
     //TODO NEED TO SEND DISCORD NOTIFICATION FROM HERE
     // await this.emailService.sendDiscordNotification([embed]);
