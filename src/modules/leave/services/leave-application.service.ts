@@ -826,6 +826,7 @@ export class LeaveApplicationService {
 
   async patchOne(id: string, dto: UpdateLeaveDto): Promise<IReturnType> {
     // try {
+    let raw_status = dto.status;
     const users = await firstValueFrom(this.findManyUsers());
     const appliedApplicationFor = users[dto?.applied_for as string];
     const getUserByRawQuery = users[dto.applied_for as string];
@@ -914,29 +915,38 @@ export class LeaveApplicationService {
       });
     }
     //TODO NEED TO SEND MAIL FROM HERE
-    this.sendMail(emails_data);
+    try {
+      this.sendMail(emails_data);
+    } catch (error) {
+      console.log("email sending error -", error);
+    }
     // await this.sendEmail(emails_data);
     //   await this.emailService.sendEmailJob(emails_data);
     //Sending Discord Notification to Admins
     const text = `
-**<@${appliedApplicationFor.discord_id}>** ${
-      dto.status === "Pending" ? `Updated` : dto.status
-    } a leave application ${
-      dto.status === "Approved"
-        ? `✅`
-        : dto.status === "Rejected"
-        ? `❌`
-        : `🛠️ `
-    }
+${
+  raw_status === "Pending"
+    ? `**<@${appliedApplicationFor.discord_id}>** ${
+        raw_status === "Pending" ? `Updated` : raw_status
+      } a leave application 🛠️ 
+    `
+    : `**<@${getApprovedByUser.discord_id}>** ${
+        raw_status === "Pending" ? `Updated` : raw_status
+      } a leave application ${
+        raw_status === "Approved"
+          ? `✅`
+          : raw_status === "Rejected"
+          ? `❌`
+          : `🛠️ `
+      }`
+}
 **Requested Date : **${moment(dto.start_date).format("LL")} to ${moment(
       dto.end_date,
     ).format("LL")}
 **Leave Applicant : **<@${appliedApplicationFor?.discord_id}>
 **Reason : **${dto.reason}
 **Leave Day : **${dto.num_of_working_days}
-**Click here to approve,** https://tracker.deepchainlabs.com/leave/approve?id=${
-      data?.id
-    }
+**Click here to approve,** https://platform.deepchainlabs.com/hr/workplace/leave/manage-leaves
                 `;
     const embed = new EmbedBuilder()
       // .setColor(0x606ffb)
@@ -965,9 +975,7 @@ export class LeaveApplicationService {
             " " +
             getApprovedByUser?.profile?.last_name
           } Rejected a leave application`,
-          iconURL: `https://api.tracker.deepchainlabs.com${getApprovedByUser?.profile?.image?.slice(
-            1,
-          )}`,
+          iconURL: `${getApprovedByUser?.profile?.image}`,
         })
         .setColor(0xef142e);
     } else {
@@ -978,9 +986,7 @@ export class LeaveApplicationService {
             " " +
             getUserByRawQuery?.profile?.last_name
           } Updated a  leave application`,
-          iconURL: `https://api.tracker.deepchainlabs.com${getUserByRawQuery?.profile?.image?.slice(
-            1,
-          )}`,
+          iconURL: `${getUserByRawQuery?.profile?.image}`,
         })
         .setColor(0xeecb0a);
     }
