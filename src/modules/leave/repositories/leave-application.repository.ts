@@ -59,25 +59,25 @@ export class LeaveApplicationRepository {
             order: { reason: order, status: "ASC" },
           });
           return [LeaveApplicationMapperInstance.mapMany(tasks[0]), tasks[1]];
-        }
-        // else if (sort_by === "leave_type") {
-        //   const tasks = await this.leaveRepository.findAndCount({
-        //     ...findOptions,
-        //     relations: { attachments: true, type: true },
-        //     join: {
-        //       alias: "leave",
-        //       leftJoinAndSelect: {
-        //         type: "leave.type", // Assuming 'type' is the relation field in your Leave entity
-        //       },
-        //     },
-        //     order: {
-        //       "type.title": order, // Specify the order by the joined table's column
-        //       "leave.status": "ASC", // Assuming 'status' is a column in the 'leave' table
-        //     },
-        //   });
-        //   return [LeaveApplicationMapperInstance.mapMany(tasks[0]), tasks[1]];
-        // }
-        else if (sort_by === "num_of_working_days") {
+        } else if (sort_by === "leave_type" && order) {
+          if (order === "ASC") {
+            const tasks = await this.leaveRepository
+              .createQueryBuilder("leaveApplication")
+              .leftJoinAndSelect("leaveApplication.type", "leaveType")
+              .orderBy("leaveType.title", "ASC") // 'ASC' or 'DESC' depending on your 'order' variable
+              .addOrderBy("leaveApplication.status", "ASC") // Assuming you also want to sort by status within each leave type
+              .getManyAndCount();
+            return [LeaveApplicationMapperInstance.mapMany(tasks[0]), tasks[1]];
+          } else {
+            const tasks = await this.leaveRepository
+              .createQueryBuilder("leaveApplication")
+              .leftJoinAndSelect("leaveApplication.type", "leaveType")
+              .orderBy("leaveType.title", "DESC") // 'ASC' or 'DESC' depending on your 'order' variable
+              .addOrderBy("leaveApplication.status", "ASC") // Assuming you also want to sort by status within each leave type
+              .getManyAndCount();
+            return [LeaveApplicationMapperInstance.mapMany(tasks[0]), tasks[1]];
+          }
+        } else if (sort_by === "num_of_working_days") {
           const tasks = await this.leaveRepository.findAndCount({
             ...findOptions,
             relations: { attachments: true, type: true },
