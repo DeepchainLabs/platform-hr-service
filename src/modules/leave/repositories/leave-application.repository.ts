@@ -25,14 +25,81 @@ export class LeaveApplicationRepository {
 
   async findAndCount(
     findOptions?: any,
-  ): Promise<[ILeaveApplication[], number]> {
+    sort_by?: string,
+    order?: string,
+  ): Promise<any> {
     try {
-      const tasks = await this.leaveRepository.findAndCount({
-        ...findOptions,
-        relations: { attachments: true, type: true },
-        order: { status: "ASC" },
-      });
-      return [LeaveApplicationMapperInstance.mapMany(tasks[0]), tasks[1]];
+      // console.log({ sort_by, order });
+      if (sort_by && order) {
+        if (sort_by === "start_date") {
+          const tasks = await this.leaveRepository.findAndCount({
+            ...findOptions,
+            relations: { attachments: true, type: true },
+            order: { start_date: order, status: "ASC" },
+          });
+          return [LeaveApplicationMapperInstance.mapMany(tasks[0]), tasks[1]];
+        } else if (sort_by === "end_date") {
+          const tasks = await this.leaveRepository.findAndCount({
+            ...findOptions,
+            relations: { attachments: true, type: true },
+            order: { end_date: order, status: "ASC" },
+          });
+          return [LeaveApplicationMapperInstance.mapMany(tasks[0]), tasks[1]];
+        } else if (sort_by === "status") {
+          const tasks = await this.leaveRepository.findAndCount({
+            ...findOptions,
+            relations: { attachments: true, type: true },
+            order: { status: "ASC" },
+          });
+          return [LeaveApplicationMapperInstance.mapMany(tasks[0]), tasks[1]];
+        } else if (sort_by === "reason") {
+          const tasks = await this.leaveRepository.findAndCount({
+            ...findOptions,
+            relations: { attachments: true, type: true },
+            order: { reason: order, status: "ASC" },
+          });
+          return [LeaveApplicationMapperInstance.mapMany(tasks[0]), tasks[1]];
+        }
+        // else if (sort_by === "leave_type") {
+        //   const tasks = await this.leaveRepository.findAndCount({
+        //     ...findOptions,
+        //     relations: { attachments: true, type: true },
+        //     join: {
+        //       alias: "leave",
+        //       leftJoinAndSelect: {
+        //         type: "leave.type", // Assuming 'type' is the relation field in your Leave entity
+        //       },
+        //     },
+        //     order: {
+        //       "type.title": order, // Specify the order by the joined table's column
+        //       "leave.status": "ASC", // Assuming 'status' is a column in the 'leave' table
+        //     },
+        //   });
+        //   return [LeaveApplicationMapperInstance.mapMany(tasks[0]), tasks[1]];
+        // }
+        else if (sort_by === "num_of_working_days") {
+          const tasks = await this.leaveRepository.findAndCount({
+            ...findOptions,
+            relations: { attachments: true, type: true },
+            order: { num_of_working_days: order, status: "ASC" },
+          });
+          return [LeaveApplicationMapperInstance.mapMany(tasks[0]), tasks[1]];
+        } else if (sort_by === "applied_for") {
+          const tasks = await this.leaveRepository.findAndCount({
+            ...findOptions,
+            relations: { attachments: true, type: true },
+            order: { applied_for: order, status: "ASC" },
+          });
+          return [LeaveApplicationMapperInstance.mapMany(tasks[0]), tasks[1]];
+        }
+      } else {
+        const tasks = await this.leaveRepository.findAndCount({
+          ...findOptions,
+          relations: { attachments: true, type: true },
+          order: { status: "ASC" },
+        });
+        return [LeaveApplicationMapperInstance.mapMany(tasks[0]), tasks[1]];
+      }
     } catch (err) {
       throw new CustomException(
         LeaveApplicationRepository.name,

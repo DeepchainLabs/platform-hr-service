@@ -59,11 +59,17 @@ export class LeaveApplicationService {
     findOptions: any,
     page: number,
     limit: number,
+    sort_by?: string,
+    order?: string,
   ): Promise<[ILeaveApplication[], number]> {
     let data: [ILeaveApplication[], number];
     try {
       const users = await firstValueFrom(this.findManyUsers());
-      data = await this.leaveApplicationRepository.findAndCount(findOptions);
+      data = await this.leaveApplicationRepository.findAndCount(
+        findOptions,
+        sort_by,
+        order,
+      );
       const res: any = [];
       data[0] &&
         data[0].map((d: any) => {

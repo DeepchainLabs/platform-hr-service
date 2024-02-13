@@ -23,10 +23,14 @@ export class LeaveApplicationController {
     findOptions,
     page,
     limit,
+    sort_by,
+    order,
   }: {
     findOptions: any;
     page: number;
     limit: number;
+    sort_by?: string;
+    order?: string;
   }) {
     findOptions.take = +limit;
     findOptions.skip = (+page - 1) * +limit;
@@ -34,6 +38,8 @@ export class LeaveApplicationController {
       findOptions,
       page,
       limit,
+      sort_by,
+      order,
     );
     return paginateResponse(data, +page, +limit);
   }
