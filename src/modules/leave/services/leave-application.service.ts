@@ -888,20 +888,27 @@ export class LeaveApplicationService {
     const capitalizedApplicant =
       appliedApplicationFor?.username?.charAt(0)?.toUpperCase() +
       appliedApplicationFor?.username?.slice(1);
+    const capitalizedApprovedBy =
+      getApprovedByUser?.username?.charAt(0)?.toUpperCase() +
+      getApprovedByUser?.username?.slice(1);
 
     //Sending Mail Notification to Admins
     for (const obj of emails) {
       emails_data.push({
         to: obj,
         subject: `Leave Application ${
-          dto.status === "Pending" ? `Updated ` : dto.status
+          raw_status === "Pending" ? `Updated ` : raw_status
         }`,
-        body: `<h1><strong>${capitalizedName} ${
-          dto.status === "Pending" ? `Updated` : dto.status
+        body: `<h1><strong>${
+          raw_status === "Pending" || raw_status === "Updated"
+            ? capitalizedName
+            : capitalizedApprovedBy
+        } ${
+          raw_status === "Pending" ? `Updated` : raw_status
         } a Leave Application ${
-          dto.status === "Approved"
+          raw_status === "Approved"
             ? `✅`
-            : dto.status === "Rejected"
+            : raw_status === "Rejected"
             ? `❌`
             : `🛠️ `
         }</strong></h1> 
@@ -1008,13 +1015,15 @@ ${
     const applicationMail = [
       {
         to: appliedApplicationFor?.secondary_email,
-        subject: `Leave Application ${dto.status}`,
-        body: `<h1><strong>${capitalizedName} ${
-          dto.status
-        } Your Leave Application ${
-          dto.status === "Approved"
+        subject: `Leave Application ${raw_status}`,
+        body: `<h1><strong>${
+          raw_status === "Pending" || raw_status === "Updated"
+            ? capitalizedName
+            : capitalizedApprovedBy
+        } ${raw_status} Your Leave Application ${
+          raw_status === "Approved"
             ? `✅`
-            : dto.status === "Rejected"
+            : raw_status === "Rejected"
             ? `❌`
             : `🛠️`
         }</strong></h1>
@@ -1037,7 +1046,7 @@ ${
     ];
 
     if (
-      (dto.status === "Rejected" || dto.status === "Approved") &&
+      (raw_status === "Rejected" || raw_status === "Approved") &&
       appliedApplicationFor?.secondary_email
     ) {
       //TODO NEED TO SEND EMAIL FROM HERE
